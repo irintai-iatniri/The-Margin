@@ -1,0 +1,468 @@
+#!/usr/bin/env python3
+"""Full-functionality test for The Margin.
+
+Drives the real index.html in headless Chromium with /api/sample intercepted,
+so every path is deterministic and no API call is made. Costs nothing per run,
+and can force the failure modes live calls will not reliably produce: refusal,
+malformed outline, truncated JSON, a terminal ending on cue.
+
+    python3 test_ui.py            # all scenarios
+    python3 test_ui.py --headed   # watch it
+
+Exit 0 means every path held.
+"""
+import json, os, pathlib, subprocess, sys, tempfile, threading, time
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+HERE = pathlib.Path(__file__).parent
+PORT = 7899
+HEADED = "--headed" in sys.argv
+
+PASS, FAIL = [], []
+
+
+def check(name, ok, detail=""):
+    (PASS if ok else FAIL).append(name)
+    print("  %s  %s" % ("PASS" if ok else "FAIL", name))
+    if not ok and detail:
+        print("        %s" % str(detail)[:300])
+
+
+# ----------------------------------------------------------------- outline
+def outline():
+    """Nine beats. n1 -> n2 -> n8(kept); n9 is the lost ending."""
+    mid = lambda i, w, e: {"id": "n%d" % i, "want": w, "exit": e, "sow": [], "due": [], "terminal": None}
+    nodes = [
+        {"id": "n1", "want": "establish the debt and who holds it",
+         "exit": "the collector's name is spoken aloud",
+         "sow": [{"id": "s1", "claim": "The collector is the bargeman's half-brother.", "subject": ["collector"]},
+                 {"id": "s2", "claim": "The ledger was forged by the harbourmaster.", "subject": ["ledger"]}],
+         "due": [], "terminal": None},
+        {"id": "n2", "want": "a trust breaks", "exit": "the ledger changes hands",
+         "sow": [{"id": "s3", "claim": "The girl has seen the ledger before.", "subject": ["girl"]}],
+         "due": ["s1"], "terminal": None},
+        mid(3, "a route out is offered", "the barge is untied"),
+        mid(4, "the cost of the route is shown", "someone is left behind"),
+        mid(5, "an old obligation surfaces", "a name is written down"),
+        mid(6, "the collector closes in", "the lamp goes out"),
+        mid(7, "a last bargain", "the tarp is pulled back"),
+        {"id": "n8", "want": "the debt is settled", "exit": "the book closes on open water",
+         "sow": [], "due": ["s2", "s3"], "terminal": "kept"},
+        {"id": "n9", "want": "it is called in", "exit": "the book closes under the ice",
+         "sow": [], "due": [], "terminal": "lost"},
+    ]
+    edges = [
+        {"from": "n1", "to": "n2", "gate": "the name is spoken"},
+        {"from": "n1", "to": "n3", "gate": "the name is withheld"},
+        {"from": "n2", "to": "n8", "gate": "the ledger is surrendered"},
+        {"from": "n2", "to": "n4", "gate": "the ledger is kept"},
+        {"from": "n3", "to": "n5", "gate": "the canal is followed north"},
+        {"from": "n3", "to": "n9", "gate": "the ice is trusted"},
+        {"from": "n4", "to": "n6", "gate": "the collector is answered"},
+        {"from": "n4", "to": "n9", "gate": "the collector is fled"},
+        {"from": "n5", "to": "n7", "gate": "the obligation is honoured"},
+        {"from": "n5", "to": "n9", "gate": "the obligation is denied"},
+        {"from": "n6", "to": "n8", "gate": "the lamp is relit"},
+        {"from": "n6", "to": "n9", "gate": "the dark is accepted"},
+        {"from": "n7", "to": "n8", "gate": "the bargain holds"},
+        {"from": "n7", "to": "n9", "gate": "the bargain breaks"},
+    ]
+    return {"start": "n1", "nodes": nodes, "edges": edges}
+
+
+def turn(prose, choices, pub, node, priv):
+    return (prose + "\n\n@CHOICES\n" + "\n".join("- " + c for c in choices) +
+            "\n\n@PUBLIC\n" + json.dumps(pub) +
+            "\n\n@NODE\n" + json.dumps(node) +
+            "\n\n@PRIVATE\n" + json.dumps(priv))
+
+
+PROSE = ("The barge pivots under you, wedged where the canal has gone solid from the bed upward. "
+         "Ice grips the hull like a hand closing. Under the tarp the girl has not moved, and you "
+         "do not look, because looking costs seconds you no longer have. On the towpath a lantern "
+         "swings once and stops. Someone is standing very still in the cold, waiting for you to "
+         "understand that they can wait longer than you can.")
+
+
+def sse(text):
+    out = []
+    for i in range(0, len(text), 180):
+        out.append("event: content_block_delta\ndata: " + json.dumps({
+            "type": "content_block_delta",
+            "delta": {"type": "text_delta", "text": text[i:i + 180]}}) + "\n\n")
+    out.append("event: message_stop\ndata: " + json.dumps({"type": "message_stop"}) + "\n\n")
+    return "".join(out)
+
+
+# ----------------------------------------------------------------- server
+class Quiet(SimpleHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def translate_path(self, path):
+        return str(HERE / "index.html")
+
+
+def serve():
+    httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Quiet)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd
+
+
+# ----------------------------------------------------------------- harness
+class Run:
+    """One page load with a scripted /api/sample."""
+
+    def __init__(self, browser, script):
+        self.script = script            # list of (matcher, responder)
+        self.seen = []                  # every request body
+        self.turns = 0
+        self.page = browser.new_page()
+        self.page.route("**/api/sample", self._handle)
+        self.page.goto("http://127.0.0.1:%d/" % PORT)
+        self.page.wait_for_selector("#begin")
+
+    def _handle(self, route, request):
+        body = json.loads(request.post_data or "{}")
+        self.seen.append(body)
+        blob = "\n".join(m.get("content", "") for m in body.get("messages", []))
+        is_outline = "beat sheet" in blob
+        if not is_outline:
+            self.turns += 1
+        res = self.script(self, blob, is_outline, self.turns)
+        if isinstance(res, tuple):          # (status, body)
+            route.fulfill(status=res[0], content_type="application/json", body=res[1])
+        else:
+            route.fulfill(status=200, content_type="text/event-stream", body=sse(res))
+
+    def text(self, sel):
+        try:
+            return self.page.inner_text(sel, timeout=2000)
+        except Exception:
+            return ""
+
+    def visible(self, sel):
+        try:
+            return self.page.is_visible(sel)
+        except Exception:
+            return False
+
+    def begin(self, who="a night bargeman", drive="protect", stake="the girl under the tarp"):
+        self.page.fill("#who", who)
+        self.page.select_option("#drive", drive)
+        self.page.fill("#stake", stake)
+        self.page.click("#begin")
+
+    def close(self):
+        self.page.close()
+
+
+def normal_script(run, blob, is_outline, turns):
+    if is_outline:
+        return json.dumps(outline())
+    if turns == 1:
+        return turn(PROSE, ["Answer the lantern.", "Cut the tarp free and run.", "Say the collector's name."],
+                    {"beat": "the barge wedges in the ice", "place": "the frozen canal",
+                     "resolve": 7, "gain": ["a boat hook"], "lose": [],
+                     "edges": [["collector", "waits on", "the towpath"]], "invalidate": []},
+                    {"satisfied": False, "next": None}, {"spend": []})
+    if turns == 2:
+        return turn(PROSE, ["Hand over the ledger.", "Keep it and lie.", "Ask what he wants."],
+                    {"beat": "the collector is named", "place": "the towpath",
+                     "resolve": 6, "gain": [], "lose": [], "edges": [], "invalidate": []},
+                    {"satisfied": True, "next": "n2"}, {"spend": []})
+    if turns == 3:
+        return turn(PROSE, ["Untie the barge.", "Wait for the ice.", "Wake her."],
+                    {"beat": "the ledger changes hands", "place": "the towpath",
+                     "resolve": 5, "gain": [], "lose": ["a boat hook"], "edges": [], "invalidate": []},
+                    {"satisfied": True, "next": "n8"}, {"spend": ["s1"]})
+    # every turn past the scripted three, including everything after a replay,
+    # must still be a well-formed turn or the harness starves the page
+    return turn(PROSE, ["Hold the line.", "Give ground.", "Look again at the ice."],
+                {"beat": "the cold settles in", "place": "open water", "resolve": 5,
+                 "gain": [], "lose": [], "edges": [], "invalidate": []},
+                {"satisfied": False, "next": None}, {"spend": []})
+
+
+# ----------------------------------------------------------------- scenarios
+def scenario_premise(browser):
+    print("\n[1] the opening screen")
+    r = Run(browser, normal_script)
+    opts = r.page.eval_on_selector_all("#drive option", "els => els.map(e => e.value)")
+    check("seven drives offered", len(opts) == 7, opts)
+    seeds = r.page.query_selector_all("#seedList button")
+    check("three seeds offered", len(seeds) == 3)
+    seeds[2].click()
+    check("seed fills who", "cartographer" in r.page.input_value("#who"))
+    check("seed sets the drive", r.page.input_value("#drive") == "seek",
+          r.page.input_value("#drive"))
+    check("seed fills the stake", len(r.page.input_value("#stake")) > 3)
+    r.close()
+
+
+def scenario_lore(browser):
+    print("\n[2] the lore book")
+    r = Run(browser, normal_script)
+    doc = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
+    doc.write("# The Verge\n\nA shelf of black rock above the Callow Sea.\n\n"
+              "## Tarn Holloway\n\nTarn keeps the tide-ledger.\n\n"
+              "## The Quiet Year\n\nEleven months in which no bell rang.\n")
+    doc.close()
+    r.page.set_input_files("#loreFile", doc.name)
+    r.page.wait_for_function("document.getElementById('loreStat').textContent.includes('passages')",
+                             timeout=5000)
+    stat = r.text("#loreStat")
+    check("lore parsed into passages", "passages" in stat, stat)
+    check("remove button appears", r.visible("#loreClear"))
+
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    first = r.seen[0]
+    blob = "\n".join(m["content"] for m in first["messages"])
+    check("lore reaches the outline as canon", "Tarn Holloway" in blob and "CANON" in blob.upper())
+    play = "\n".join(m["content"] for m in r.seen[1]["messages"])
+    check("lore retrieved into the turn", "[WORLD" in play, play[:160])
+    os.unlink(doc.name)
+    r.close()
+
+
+def scenario_play(browser):
+    print("\n[3] a normal run")
+    r = Run(browser, normal_script)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+
+    check("forge screen cleared", not r.visible("#forging"))
+    check("three choices rendered", len(r.page.query_selector_all("#choices .choice")) == 3)
+    check("prose rendered", len(r.text("#prose")) > 200)
+    check("place tracked", "frozen canal" in r.text("#place"), r.text("#place"))
+    check("inventory tracked", "boat hook" in r.text("#carrying"), r.text("#carrying"))
+    check("chronicle written", "wedges in the ice" in r.text("#beats"), r.text("#beats"))
+    check("arc meter shown", r.visible("#arc") and r.visible("#arcHead"))
+    marks = r.text("#marks")
+    check("resolve meter drawn", marks.count("\u25a0") == 7, marks)
+
+    r.page.click("#choices .choice >> nth=2")
+    r.page.wait_for_function("document.querySelectorAll('#choices .choice').length===3 && "
+                             "document.getElementById('beats').children.length===2", timeout=15000)
+    check("second turn committed", r.page.eval_on_selector("#beats", "e => e.children.length") == 2)
+    check("echo shows the choice taken", "chose" in r.text("#echo").lower(), r.text("#echo"))
+    check("turn back becomes available", r.visible("#turnbackBtn"))
+
+    # free text
+    r.page.fill("#freeInput", "Cut the rope and let the barge drift.")
+    r.page.click("#freeGo")
+    r.page.wait_for_function("document.getElementById('beats').children.length===3", timeout=15000)
+    sent = "\n".join(m["content"] for m in r.seen[-1]["messages"])
+    check("free text reaches the narrator", "Cut the rope" in sent)
+    check("inventory loss applied", "boat hook" not in r.text("#carrying"), r.text("#carrying"))
+    return r
+
+
+def scenario_turnback(browser):
+    print("\n[4] turning back")
+    r = scenario_play(browser)
+    before = r.page.eval_on_selector("#beats", "e => e.children.length")
+    r.page.click("#turnbackBtn")
+    r.page.wait_for_selector("#turnback .tb", timeout=4000)
+    pts = r.page.query_selector_all("#turnback .tb")
+    check("turning points offered (%d)" % len(pts), len(pts) >= 1)
+    check("points are labelled by beat", len(r.text("#turnback")) > 20)
+    pts[-1].click()
+    r.page.wait_for_function("!document.getElementById('turnback').classList.contains('hidden')===false",
+                             timeout=4000)
+    after = r.page.eval_on_selector("#beats", "e => e.children.length")
+    check("chronicle rewound (%d -> %d)" % (before, after), after < before)
+    check("choices restored", len(r.page.query_selector_all("#choices .choice")) == 3)
+    check("notice explains the rewind", "turned back" in r.text("#playNotice").lower(),
+          r.text("#playNotice"))
+    r.close()
+
+
+def scenario_ending(browser):
+    print("\n[5] the ending, and walking it again")
+    r = Run(browser, normal_script)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    for _ in range(2):
+        r.page.click("#choices .choice >> nth=0")
+        r.page.wait_for_timeout(1200)
+    r.page.wait_for_selector("#ending", state="visible", timeout=15000)
+
+    check("ending screen shown", r.visible("#ending"))
+    check("ending titled by drive", "survived" in r.text("#endTitle").lower(), r.text("#endTitle"))
+    check("beats visited reported", "of 9" in r.text("#endSub"), r.text("#endSub"))
+    unl = r.text("#unlearned")
+    check("unlearned setups counted", "unlearned" in unl.lower(), unl)
+    check("count excludes what was spent", unl.startswith("2 "), unl)
+    check("walk it again offered", r.visible("#replay"))
+    check("turn back offered at the end", r.visible("#endTurnback"))
+    check("save cleared on ending",
+          r.page.evaluate("() => localStorage.getItem('margin:run:v2') === null"))
+
+    calls = len(r.seen)
+    r.page.click("#replay")
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    check("replay reuses the outline (no new outline call)",
+          not any("beat sheet" in "\n".join(m["content"] for m in b["messages"])
+                  for b in r.seen[calls:]))
+    check("replay resets the chronicle",
+          r.page.eval_on_selector("#beats", "e => e.children.length") == 1)
+    r.close()
+
+
+def scenario_failures(browser):
+    print("\n[6] failure paths")
+
+    # refusal on the outline
+    def refuse(run, blob, is_outline, turns):
+        if is_outline:
+            return (403, json.dumps({"type": "error", "error": {"type": "permission_error",
+                                                                "message": "refused"}}))
+        return normal_script(run, blob, is_outline, turns)
+
+    r = Run(browser, refuse)
+    r.begin()
+    r.page.wait_for_selector("#goOn", timeout=20000)
+    check("refusal offers Play anyway", r.visible("#goOn"))
+    check("refusal is not a dead end", r.visible("#backBtn"))
+    r.page.click("#goOn")
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    check("arcless play starts", len(r.page.query_selector_all("#choices .choice")) == 3)
+    check("arc meter hidden without an outline", not r.visible("#arc") and not r.visible("#arcHead"))
+    arcless = "\n".join(m["content"] for m in r.seen[-1]["messages"])
+    check("arcless prompt drops the beat block", "[BEAT]" not in arcless)
+    check("arcless prompt asks for its own ending", '"ending"' in arcless)
+    r.close()
+
+    # malformed outline -> one retry -> fallback
+    state = {"n": 0}
+
+    def malformed(run, blob, is_outline, turns):
+        if is_outline:
+            state["n"] += 1
+            return "here is your outline: {\"nodes\": [ truncated"
+        return normal_script(run, blob, is_outline, turns)
+
+    r = Run(browser, malformed)
+    r.begin()
+    r.page.wait_for_selector("#goOn", timeout=30000)
+    check("malformed outline retried exactly once (%d attempts)" % state["n"], state["n"] == 2)
+    check("malformed outline falls back, not hangs", r.visible("#goOn"))
+    r.close()
+
+    # unreachable ending -> verification rejects, retries
+    bad = outline()
+    bad["edges"] = [e for e in bad["edges"] if e["to"] != "n8"]
+    vstate = {"n": 0}
+
+    def unverifiable(run, blob, is_outline, turns):
+        if is_outline:
+            vstate["n"] += 1
+            return json.dumps(bad if vstate["n"] == 1 else outline())
+        return normal_script(run, blob, is_outline, turns)
+
+    r = Run(browser, unverifiable)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=30000)
+    check("unreachable ending rejected then regenerated (%d attempts)" % vstate["n"],
+          vstate["n"] == 2)
+    check("recovered outline plays", len(r.page.query_selector_all("#choices .choice")) == 3)
+    r.close()
+
+    # rate limit mid-play is recoverable
+    def limited(run, blob, is_outline, turns):
+        if not is_outline and turns == 2:
+            return (429, json.dumps({"type": "error", "error": {"type": "rate_limit_error",
+                                                                "message": "Error"}}))
+        return normal_script(run, blob, is_outline, turns)
+
+    r = Run(browser, limited)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    r.page.click("#choices .choice >> nth=0")
+    r.page.wait_for_function("document.getElementById('playNotice').textContent.length > 10",
+                             timeout=15000)
+    check("rate limit surfaces a notice", "rate" in r.text("#playNotice").lower() or
+          "many turns" in r.text("#playNotice").lower(), r.text("#playNotice"))
+    check("free text still offered after an error", r.visible("#freeform"))
+    check("run survives the error",
+          r.page.evaluate("() => localStorage.getItem('margin:run:v2') !== null"))
+    r.close()
+
+
+def scenario_persistence(browser):
+    print("\n[7] saving and resuming")
+    r = Run(browser, normal_script)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    r.page.click("#choices .choice >> nth=0")
+    r.page.wait_for_function("document.getElementById('beats').children.length===2", timeout=15000)
+    saved = r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2'))")
+    check("run persisted", bool(saved) and saved.get("turn") == 2, str(saved)[:120] if saved else "none")
+    check("outline persisted with it", bool(saved.get("skeleton")))
+    check("snapshots persisted", len(saved.get("snaps", [])) >= 1)
+    check("transcript persisted", len(saved.get("transcript", [])) == 2)
+
+    r.page.reload()
+    r.page.wait_for_selector("#begin", timeout=5000)
+    check("resume offered after reload", r.visible("#resume"))
+    r.page.click("#resume")
+    r.page.wait_for_selector("#play", state="visible", timeout=5000)
+    check("resumed into play", r.visible("#prose") and len(r.text("#prose")) > 100)
+    check("resumed chronicle intact",
+          r.page.eval_on_selector("#beats", "e => e.children.length") == 2)
+    r.close()
+
+
+# ----------------------------------------------------------------- main
+def main():
+    if not (HERE / "index.html").exists():
+        sys.exit("index.html missing — run patch.py first")
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        sys.exit("playwright not importable — pip install --user playwright")
+
+    httpd = serve()
+    print("\nThe Margin — full functionality test (network stubbed, no API calls)")
+    t0 = time.time()
+    with sync_playwright() as p:
+        # The bundled build can lag the installed playwright version, so prefer a
+        # real Chrome/Chromium on the box and only fall back to the download.
+        args = ["--no-sandbox", "--disable-dev-shm-usage"]
+        browser = None
+        for kw in ({"channel": "chrome"}, {"channel": "chromium"}, {}):
+            try:
+                browser = p.chromium.launch(headless=not HEADED, args=args, **kw)
+                print("  browser: %s" % (kw.get("channel") or "bundled"))
+                break
+            except Exception:
+                continue
+        if browser is None:
+            httpd.shutdown()
+            sys.exit("no usable browser — run: python3 -m playwright install chromium")
+        for fn in (scenario_premise, scenario_lore, scenario_play,
+                   scenario_turnback, scenario_ending, scenario_failures,
+                   scenario_persistence):
+            try:
+                out = fn(browser)
+                if hasattr(out, "close"):
+                    out.close()
+            except Exception as e:
+                check("%s did not crash" % fn.__name__, False, repr(e))
+        browser.close()
+    httpd.shutdown()
+
+    print("\n%s  —  %d passed, %d failed  (%.1fs)\n" %
+          ("ALL PATHS HELD" if not FAIL else "%d FAILED" % len(FAIL),
+           len(PASS), len(FAIL), time.time() - t0))
+    if FAIL:
+        for f in FAIL:
+            print("  failed: %s" % f)
+        print()
+    sys.exit(1 if FAIL else 0)
+
+
+if __name__ == "__main__":
+    main()

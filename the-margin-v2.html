@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Margin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E6DF; --paper-deep:#D9DCD2; --ink:#23272A; --ink-soft:#5C6367;
+  --rule:#B7BCB2; --blood:#7A2E36; --brass:#856320;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141619; --paper-deep:#1B1E22; --ink:#DEDDD5; --ink-soft:#959B99;
+    --rule:#333840; --blood:#C87B80; --brass:#C7A356;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141619; --paper-deep:#1B1E22; --ink:#DEDDD5; --ink-soft:#959B99;
+  --rule:#333840; --blood:#C87B80; --brass:#C7A356;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"Spectral",Georgia,"Iowan Old Style",serif;font-size:18px;line-height:1.66;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:clamp(18px,4vw,44px) clamp(16px,4vw,32px) 64px}
+
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:clamp(22px,5vw,40px)}
+.brand{font-family:"Bodoni Moda",Didot,serif;font-weight:600;
+  font-size:clamp(30px,7vw,46px);line-height:.95;letter-spacing:-.015em;margin:0}
+.brand-sub{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:6px 0 0}
+.mast-tools{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--ink-soft)}
+.mast-tools label{display:flex;gap:6px;align-items:center;white-space:nowrap}
+select,input[type=text]{font-family:inherit;font-size:15px;color:var(--ink);background:transparent;
+  border:0;border-bottom:1px solid var(--rule);padding:3px 2px;border-radius:0}
+select{font-size:13px;cursor:pointer}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+
+.opening{max-width:46rem}
+.premise{font-family:"Bodoni Moda",Didot,serif;font-size:clamp(23px,5.2vw,34px);
+  line-height:1.36;margin:0 0 34px;font-weight:400}
+.premise .fill{display:inline-block;min-width:9ch;max-width:100%;
+  font-family:"Spectral",Georgia,serif;font-size:.62em;font-style:italic;
+  border-bottom:1.5px solid var(--blood);padding:0 .2em 2px;background:transparent;color:var(--ink)}
+.premise .fill::placeholder{color:var(--ink-soft);opacity:.55}
+.fill-select{-webkit-appearance:none;appearance:none;min-width:0;width:auto;
+  border-bottom:1.5px solid var(--blood);cursor:pointer;padding-right:.2em}
+.fill-select option{font-family:"Spectral",Georgia,serif;font-size:16px;font-style:normal;
+  background:var(--paper);color:var(--ink)}
+.seeds{border-top:1px solid var(--rule);padding-top:16px;margin-bottom:30px}
+.seeds h2{font-size:12.5px;font-weight:600;font-style:italic;color:var(--ink-soft);margin:0 0 10px}
+.seed{display:block;width:100%;text-align:left;background:transparent;border:0;border-left:2px solid transparent;
+  padding:7px 0 7px 12px;margin-left:-14px;color:var(--ink);font:inherit;font-size:16px;cursor:pointer}
+.seed:hover{border-left-color:var(--blood);color:var(--blood)}
+.seed em{color:var(--ink-soft);font-size:14.5px}
+.tones{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:32px;font-size:15px}
+.tones label{cursor:pointer;display:flex;gap:7px;align-items:baseline}
+.tones input{accent-color:var(--blood)}
+.tones span small{display:block;color:var(--ink-soft);font-size:13px;font-style:italic}
+
+.btn{font-family:"Bodoni Moda",Didot,serif;font-size:19px;font-weight:600;
+  background:var(--blood);color:var(--paper);border:0;padding:11px 30px;cursor:pointer}
+.btn:hover{background:var(--ink)}
+.btn[disabled]{opacity:.4;cursor:default}
+.btn-quiet{background:transparent;color:var(--ink-soft);border:1px solid var(--rule);
+  font-family:inherit;font-size:14.5px;padding:7px 16px;cursor:pointer}
+.btn-quiet:hover{color:var(--blood);border-color:var(--blood)}
+
+.forging{max-width:38rem}
+.forging h2{font-family:"Bodoni Moda",Didot,serif;font-size:26px;font-weight:400;margin:0 0 14px}
+.forging p{color:var(--ink-soft);font-style:italic;margin:0 0 8px}
+.forging .step{font-size:15.5px;padding:5px 0 5px 16px;border-left:2px solid var(--rule);color:var(--ink-soft)}
+.forging .step.done{border-left-color:var(--brass);color:var(--ink)}
+
+.play{display:grid;grid-template-columns:minmax(0,1fr) 224px;gap:clamp(24px,5vw,56px);align-items:start}
+@media (max-width:820px){.play{grid-template-columns:1fr}}
+
+.prose{font-size:clamp(17.5px,2.2vw,19.5px);line-height:1.72;max-width:38rem;min-height:9em}
+.prose p{margin:0 0 1.05em}
+.prose p:first-child::first-letter{font-family:"Bodoni Moda",Didot,serif;font-size:1.05em;font-weight:600}
+.thinking{color:var(--ink-soft);font-style:italic}
+.thinking::after{content:"";animation:dots 1.4s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+@media (prefers-reduced-motion:reduce){.thinking::after{animation:none;content:"..."}}
+.echo{color:var(--ink-soft);font-style:italic;font-size:15.5px;border-left:2px solid var(--rule);
+  padding-left:12px;margin:0 0 26px}
+
+.choices{margin-top:30px;border-top:1px solid var(--rule);padding-top:4px;max-width:38rem}
+.choice{display:block;width:100%;text-align:left;background:transparent;border:0;
+  border-bottom:1px solid var(--rule);padding:14px 30px 14px 0;color:var(--ink);
+  font:inherit;font-size:17px;line-height:1.5;cursor:pointer;position:relative}
+.choice:hover,.choice:focus-visible{color:var(--blood)}
+.choice::after{content:"";position:absolute;right:8px;top:50%;width:7px;height:7px;
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  transform:translateY(-50%) rotate(-45deg);opacity:0}
+.choice:hover::after,.choice:focus-visible::after{opacity:1}
+.choice[disabled]{opacity:.35;cursor:default}
+.freeform{display:flex;gap:10px;align-items:center;margin-top:18px;max-width:38rem}
+.freeform input{flex:1;font-size:16px;padding:8px 2px}
+.freeform .btn-quiet{flex:none}
+
+.margin{font-size:14px;line-height:1.5;color:var(--ink-soft)}
+.margin h2{font-size:12.5px;font-weight:600;font-style:italic;color:var(--ink-soft);
+  margin:0 0 12px;padding-bottom:7px;border-bottom:1px solid var(--rule)}
+.condition{margin-bottom:26px}
+.marks{letter-spacing:.18em;font-size:15px;color:var(--blood);margin:2px 0 12px}
+.marks .spent{color:var(--rule)}
+.place{color:var(--ink);font-style:italic;margin:0 0 8px}
+.carrying{margin:0;padding:0;list-style:none}
+.carrying li{padding:2px 0 2px 13px;text-indent:-13px}
+.carrying li::before{content:"— "}
+.empty{font-style:italic;opacity:.7}
+.arc{letter-spacing:.16em;font-size:13px;color:var(--brass);margin:0 0 22px;word-break:break-all}
+.arc .unlit{color:var(--rule)}
+.beats{margin:0;padding:0;list-style:none;max-height:40vh;overflow-y:auto}
+.beats li{padding:7px 0 7px 12px;border-left:1px solid var(--rule);margin-bottom:2px}
+.beats li.fresh{border-left-color:var(--brass);color:var(--ink)}
+.margin-note{margin-top:18px;font-size:12.5px;font-style:italic;opacity:.75;line-height:1.45}
+
+.ending{border-top:2px solid var(--blood);margin-top:34px;padding-top:20px;max-width:38rem}
+.ending h2{font-family:"Bodoni Moda",Didot,serif;font-size:28px;font-weight:600;margin:0 0 6px}
+.ending p{color:var(--ink-soft);margin:0 0 10px;font-style:italic}
+.unlearned{border-left:2px solid var(--brass);padding-left:14px;margin:0 0 22px;
+  font-size:15.5px;color:var(--ink-soft);font-style:italic}
+.ending-actions{display:flex;gap:12px;flex-wrap:wrap}
+.lorerow{border-top:1px solid var(--rule);padding-top:16px;margin-bottom:30px}
+.lorelabel{display:block;font-size:12.5px;font-weight:600;font-style:italic;
+  color:var(--ink-soft);margin-bottom:9px}
+.lorelabel em{font-weight:400;opacity:.8}
+#loreFile{font-family:inherit;font-size:14.5px;color:var(--ink-soft);max-width:100%}
+#loreFile::file-selector-button{font-family:inherit;font-size:14.5px;background:transparent;
+  color:var(--ink-soft);border:1px solid var(--rule);padding:6px 14px;margin-right:12px;cursor:pointer}
+#loreFile::file-selector-button:hover{color:var(--blood);border-color:var(--blood)}
+.lorestat{font-size:14px;color:var(--brass);font-style:italic;margin:9px 0 0}
+.turnback{border-left:2px solid var(--brass);padding:4px 0 4px 15px;margin:26px 0;max-width:38rem}
+.turnback h3{font-size:12.5px;font-weight:600;font-style:italic;color:var(--ink-soft);margin:0 0 8px}
+.turnback .tb{display:block;width:100%;text-align:left;background:transparent;border:0;
+  padding:7px 0;color:var(--ink);font:inherit;font-size:16px;cursor:pointer;line-height:1.45}
+.turnback .tb:hover{color:var(--blood)}
+.turnback .tb-t{font-style:italic;color:var(--ink-soft);font-size:13.5px;margin-right:8px}
+.tb-none{font-style:italic;color:var(--ink-soft);font-size:15px;margin:0}
+.notice{border-left:2px solid var(--brass);padding:10px 0 10px 14px;margin:22px 0;
+  font-size:15.5px;color:var(--ink-soft);max-width:38rem}
+.notice b{color:var(--ink);font-weight:600}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <h1 class="brand">The Margin</h1>
+      <p class="brand-sub">A story that only exists while you are reading it.</p>
+    </div>
+    <div class="mast-tools">
+      <label id="paceWrap" class="hidden">Pace
+        <select id="pace"><option value="quick" selected>Brisk</option><option value="default">Considered</option></select>
+      </label>
+      <button id="turnbackBtn" class="btn-quiet hidden" type="button">Turn back</button>
+      <button id="abandon" class="btn-quiet hidden" type="button">Abandon run</button>
+    </div>
+  </header>
+
+  <section id="opening" class="opening">
+    <p class="premise">You are
+      <input class="fill" id="who" type="text" autocomplete="off" spellcheck="false"
+             placeholder="who?" maxlength="90" aria-label="Who you are">, and you
+      <select class="fill fill-select" id="drive" aria-label="What drives you"></select>
+      <input class="fill" id="stake" type="text" autocomplete="off" spellcheck="false"
+             placeholder="what?" maxlength="90" aria-label="What it concerns">.
+    </p>
+    <div class="seeds"><h2>Or take one of these</h2><div id="seedList"></div></div>
+    <div class="tones" role="radiogroup" aria-label="Tone">
+      <label><input type="radio" name="tone" value="grim" checked><span>Grim<small>consequences stick</small></span></label>
+      <label><input type="radio" name="tone" value="wry"><span>Wry<small>the world is absurd</small></span></label>
+      <label><input type="radio" name="tone" value="wondrous"><span>Wondrous<small>strangeness is kind</small></span></label>
+    </div>
+    <div class="lorerow">
+      <label for="loreFile" class="lorelabel">Lore book <em>optional — a .txt or .md that sets the world</em></label>
+      <input type="file" id="loreFile" accept=".txt,.md,.markdown,text/plain,text/markdown">
+      <button id="loreClear" class="btn-quiet hidden" type="button">Remove</button>
+      <p class="lorestat" id="loreStat"></p>
+    </div>
+
+    <button id="begin" class="btn" type="button">Begin</button>
+    <button id="resume" class="btn-quiet hidden" type="button" style="margin-left:12px">Resume saved run</button>
+    <div id="openNotice"></div>
+  </section>
+
+  <section id="forging" class="forging hidden">
+    <h2 id="forgeTitle">Laying out the arc</h2>
+    <p>The shape is decided before a word is written. None of it will be shown to you.</p>
+    <div id="forgeSteps"></div>
+    <div style="margin-top:22px">
+      <button id="skipArc" class="btn-quiet" type="button">Skip the outline and start</button>
+    </div>
+    <div id="forgeNotice"></div>
+  </section>
+
+  <section id="play" class="play hidden">
+    <div>
+      <p id="echo" class="echo hidden"></p>
+      <div id="prose" class="prose" aria-live="polite"></div>
+      <div id="turnback" class="turnback hidden"></div>
+      <div id="choices" class="choices hidden"></div>
+      <div id="freeform" class="freeform hidden">
+        <input id="freeInput" type="text" maxlength="160" placeholder="or do something else…" aria-label="Describe your own action">
+        <button id="freeGo" class="btn-quiet" type="button">Do it</button>
+      </div>
+      <div id="stopWrap" class="freeform hidden" style="margin-top:20px">
+        <button id="stop" class="btn-quiet" type="button">Stop writing</button>
+      </div>
+      <div id="playNotice"></div>
+      <div id="ending" class="ending hidden">
+        <h2 id="endTitle"></h2>
+        <p id="endSub"></p>
+        <p class="unlearned" id="unlearned"></p>
+        <div class="ending-actions">
+          <button id="replay" class="btn hidden" type="button">Walk it again</button>
+          <button id="endTurnback" class="btn-quiet" type="button">Turn back</button>
+          <button id="saveTranscript" class="btn-quiet hidden" type="button">Save the transcript</button>
+          <button id="again" class="btn-quiet" type="button">A different story</button>
+        </div>
+      </div>
+    </div>
+    <aside class="margin">
+      <div class="condition">
+        <h2>Condition</h2>
+        <p class="place" id="place">—</p>
+        <div class="marks" id="marks" aria-label="Resolve"></div>
+        <ul class="carrying" id="carrying"></ul>
+      </div>
+      <h2 id="arcHead">How far in</h2>
+      <div class="arc" id="arc" aria-label="Progress through the arc"></div>
+      <h2>What is remembered</h2>
+      <ul class="beats" id="beats"></ul>
+      <p class="margin-note">This column is everything the story is told about itself. What it is not told, it still knows.</p>
+    </aside>
+  </section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var DRIVES = {
+  lose: { verb:"cannot afford to lose",
+    shape:"It is already theirs and in their hands. The beats are erosion — each one narrows what they can still do to keep hold of it. The middle turn is usually that holding on costs something else they cannot afford.",
+    kept:"it is still theirs", lost:"it is taken from them",
+    keptTitle:"You kept it.", lostTitle:"It is gone." },
+
+  protect: { verb:"are protecting",
+    shape:"It is not theirs. It exists apart from them, and it may not want protecting. Threats arrive on a schedule the protagonist does not set, and the cost lands on the protector rather than on the thing. The middle turn is usually the protected thing acting against its own safety.",
+    kept:"it survives, whatever that cost the protagonist", lost:"it does not survive",
+    keptTitle:"It survived.", lostTitle:"It didn't." },
+
+  chase: { verb:"are chasing",
+    shape:"The quarry is known, ahead of them, and moving. The beats are near-misses and closing distance, each costing more than the last. The middle turn is usually learning why it runs.",
+    kept:"they have it in hand", lost:"it outruns them for good",
+    keptTitle:"You have it.", lostTitle:"It got away." },
+
+  seek: { verb:"are searching for",
+    shape:"They do not know where it is and may be wrong about what it is. The beats are findings rather than distances — each one changes what they believe they are looking for. The middle turn is usually that the thing is not what they were told.",
+    kept:"they find it, and know what it is", lost:"the trail dies, or what they find is nothing",
+    keptTitle:"You found it.", lostTitle:"The trail went cold." },
+
+  owe: { verb:"owe",
+    shape:"The debt exists before the first beat, and someone is coming to collect. The beats are the clock and the collector. The middle turn is usually discovering what the debt actually bought.",
+    kept:"the debt is settled", lost:"it is called in and they cannot pay",
+    keptTitle:"You settled it.", lostTitle:"It came due." },
+
+  flee: { verb:"are running from",
+    shape:"Something is behind them and does not tire. The beats are distance gained and lost, and the places that will not shelter them. The middle turn is usually that running costs them the thing that made running worth doing.",
+    kept:"they are clear of it", lost:"it catches them",
+    keptTitle:"You got clear.", lostTitle:"It caught you." },
+
+  become: { verb:"must become",
+    shape:"They begin as something else, and the change is not automatic. The beats are thresholds, each demanding they give up something of what they were. The middle turn is usually meeting what they would be if they finished.",
+    kept:"the change is complete", lost:"they remain what they were",
+    keptTitle:"You became it.", lostTitle:"You stayed as you were." }
+};
+
+var SEEDS = [
+  {who:"the last keeper of a lighthouse on an inhabited rock", drive:"lose", stake:"the flame",
+   note:"the supply boat is nine weeks late"},
+  {who:"a debt collector in a city that repays in memories", drive:"owe", stake:"more than you can carry",
+   note:"you have been paid too well, too often"},
+  {who:"a cartographer on a ship that keeps finding the same uncharted coast", drive:"seek",
+   stake:"the island that is on no map", note:"the crew has stopped writing it in the log"}
+];
+var TONE_NOTE = {
+  grim:"Grim: consequences accumulate and are not undone. Mercy is possible but costly.",
+  wry:"Wry: the world is bureaucratic, petty and absurd, and takes itself seriously. Danger is real; the framing is dry.",
+  wondrous:"Wondrous: the strange is beautiful before it is threatening. Lyrical, generous, still capable of loss."
+};
+
+var S = null, sampleFn = null, downloadsNs = null, ctl = null, busy = false;
+var SAVE_KEY = "margin:run:v2";
+
+/* ============================ state ============================ */
+function drive(){ return DRIVES[(S && S.drive) || "lose"] || DRIVES.lose; }
+
+function blankState(who, stake, tone, dr){
+  return {
+    v:2, who:who, stake:stake, tone:tone, drive:dr || "lose",
+    place:"—", resolve:8, items:[], turn:0,
+    beats:[], transcript:[], history:[],
+    skeleton:null, node:null, visited:[], nodeTurns:0,
+    secrets:{}, edges:[], edgeSeq:0,
+    lore:null,
+    snaps:[], lastChoices:[],
+    ended:null
+  };
+}
+function save(){ try{ if(S) localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function loadSave(){ try{ var r=localStorage.getItem(SAVE_KEY); if(!r) return null;
+  var o=JSON.parse(r); return (o && o.v===2 && o.skeleton) ? o : null; }catch(e){ return null; } }
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+function $(id){ return document.getElementById(id); }
+function show(el){ el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+function notice(where, html){ $(where).innerHTML = html ? '<div class="notice">'+html+'</div>' : ""; }
+
+/* ============================ skeleton ============================ */
+var STOP = {" the":1,"and":1,"that":1,"with":1,"from":1,"they":1,"them":1,"this":1,"have":1,
+  "were":1,"been":1,"their":1,"which":1,"when":1,"there":1,"would":1,"could":1,"about":1,
+  "into":1,"than":1,"then":1,"some":1,"what":1,"only":1,"other":1,"after":1,"before":1,"where":1};
+
+function chunkLore(text){
+  var blocks = String(text).split(/\n\s*\n/), out = [], buf = "";
+  function flush(){ if(buf.trim().length > 40) out.push(buf.trim()); buf = ""; }
+  blocks.forEach(function(b){
+    b = b.trim(); if(!b) return;
+    if(/^#{1,6}\s/.test(b) && buf) flush();
+    if((buf + "\n\n" + b).length > 900) flush();
+    buf = buf ? buf + "\n\n" + b : b;
+  });
+  flush();
+  return out.map(function(t){
+    var keys = {}, m = t.match(/\b[A-Z][A-Za-z'\u2019-]{3,}\b/g) || [];
+    m.forEach(function(w){ w = w.toLowerCase(); if(!STOP[w]) keys[w] = 1; });
+    return { text:t, keys:Object.keys(keys).slice(0, 24) };
+  });
+}
+
+function loadLore(file){
+  return new Promise(function(res, rej){
+    var r = new FileReader();
+    r.onload = function(){
+      var text = String(r.result || "").replace(/\r\n/g, "\n").trim();
+      if(!text) return rej(new Error("that file was empty"));
+      res({ name:file.name, text:text, chunks:chunkLore(text) });
+    };
+    r.onerror = function(){ rej(new Error("the file could not be read")); };
+    r.readAsText(file);
+  });
+}
+
+function retrieveLore(action){
+  if(!S || !S.lore || !S.lore.chunks.length) return [];
+  var hay = (action + " " + (S.transcript.length ? S.transcript[S.transcript.length-1].prose : "") +
+             " " + S.place + " " + S.items.join(" ")).toLowerCase();
+  var scored = S.lore.chunks.map(function(c, i){
+    var n = 0;
+    c.keys.forEach(function(k){ if(hay.indexOf(k) >= 0) n++; });
+    return { i:i, n:n, text:c.text };
+  }).filter(function(x){ return x.n > 0; });
+  scored.sort(function(a, b){ return b.n - a.n; });
+  if(!scored.length) return [S.lore.chunks[0].text];
+  return scored.slice(0, 2).map(function(x){ return x.text; });
+}
+
+function skeletonPrompt(who, stake, tone, dr, lore){
+  var D = DRIVES[dr] || DRIVES.lose;
+  var L = lore ? lore.text.slice(0, 24000) : null;
+  var head = L ? [
+"You are outlining inside a world that already exists. Its source document follows. Everything in it is CANON: true, fixed, and yours to build on but never to contradict. Where it is silent you may invent freely, in its register. Where it names people, places, factions or rules, use those rather than inventions of your own.",
+"",
+"[THE WORLD]",
+L,
+(lore.text.length > 24000 ? "[…document continues; you have the opening of it]" : ""),
+"",
+"—————",
+""
+] : [];
+  return head.concat([
+"You are a story editor outlining a novel. Give me the beat sheet — structure only, no prose, no scenes, no dialogue. This is the same job as breaking a season of television before anything is scripted.",
+"",
+"PROTAGONIST: " + who + ".",
+"THE DRIVE: they " + D.verb + " " + stake + ".",
+"SHAPE THIS IMPLIES: " + D.shape,
+"TONE: " + (TONE_NOTE[tone] || TONE_NOTE.grim),
+"",
+"If the protagonist is a type rather than a person, or the stake a quality rather than a thing, make both specific first — one character with a job, a place and a century, and a stake concrete enough to be handled, taken, or refused. Outline the specific version.",
+"",
+"It branches, so the beat sheet is a graph. A beat says what must HAPPEN there, never who or how or in what room: 'a trust breaks' is a beat, 'the miller informs on her in the granary' is a scene, and scenes get written later.",
+"",
+"STRUCTURE",
+"- 12 beats. One opening. Three endings, at least one where the stake is kept and one where it is lost.",
+"- Two beats that every route runs through — the act breaks.",
+"- Three optional beats: reachable, never required.",
+"- Every non-ending beat branches at least two ways. Every beat is reachable from the opening. Every ending is reachable.",
+"- \"exit\" is the event that moves the story on, stated as something that visibly happens. 'She is holding the ledger' works. 'She understands the cost' does not — nothing on the page shows it.",
+"",
+"SETUPS AND PAYOFFS: 8 of them. A setup is a fact about the world the reader has not been given yet — the thing a re-read rewards. Plant each on a beat where it could first be implied, and mark the later beat where it could pay off. Plant more than any single route can pay off, at least three on optional beats, so a reader who takes one path leaves things behind unexplained. Every setup must be true of the world; none is a lie to the reader.",
+"",
+"Be terse. Every \"want\", \"exit\", \"gate\" and \"claim\" is one short sentence — this is a working outline, not a pitch.",
+"",
+"Reply with ONLY this JSON, no other text:",
+'{"start":"n1","nodes":[{"id":"n1","want":"what this beat is for","exit":"the event that moves it on","sow":[{"id":"s1","claim":"the fact, one sentence","subject":["what it concerns"]}],"due":["s4"],"terminal":null}],"edges":[{"from":"n1","to":"n2","gate":"which turn of events takes this branch"}]}',
+"",
+'Endings use "terminal":"kept" (meaning ' + D.kept + ') or "terminal":"lost" (meaning ' + D.lost + '), no outgoing edges, and an "exit" describing how the book closes.'
+  ]).join("\n");
+}
+
+function verifySkeleton(sk){
+  var problems = [];
+  if(!sk || !Array.isArray(sk.nodes) || sk.nodes.length < 8) return ["too few nodes"];
+  var byId = {};
+  sk.nodes.forEach(function(n){ if(n && n.id) byId[n.id] = n; });
+  if(!byId[sk.start]) problems.push("no start node");
+  var edges = Array.isArray(sk.edges) ? sk.edges.filter(function(e){
+    return e && byId[e.from] && byId[e.to];
+  }) : [];
+  sk.edges = edges;
+
+  var out = {};
+  edges.forEach(function(e){ (out[e.from] = out[e.from] || []).push(e); });
+  var seen = {}, stack = [sk.start];
+  while(stack.length){
+    var id = stack.pop();
+    if(!id || seen[id] || !byId[id]) continue;
+    seen[id] = true;
+    (out[id] || []).forEach(function(e){ stack.push(e.to); });
+  }
+  var kept = false, lost = false;
+  sk.nodes.forEach(function(n){
+    if(!seen[n.id]) problems.push("unreachable: " + n.id);
+    if(n.terminal === "kept" && seen[n.id]) kept = true;
+    if(n.terminal === "lost" && seen[n.id]) lost = true;
+    if(!n.terminal && seen[n.id] && !(out[n.id] || []).length) problems.push("dead end: " + n.id);
+  });
+  if(!kept) problems.push("no reachable kept ending");
+  if(!lost) problems.push("no reachable lost ending");
+  return problems;
+}
+
+function registerSecrets(sk){
+  var reg = {};
+  sk.nodes.forEach(function(n){
+    (n.sow || []).forEach(function(s){
+      if(s && s.id && s.claim){
+        reg[s.id] = { id:s.id, claim:String(s.claim), subject:(s.subject||[]).map(String),
+                      status:"latent", sow_node:n.id };
+      }
+    });
+    (n.due || []).forEach(function(sid){
+      if(reg[sid]) reg[sid].due_node = n.id;
+    });
+  });
+  sk.nodes.forEach(function(n){
+    (n.due || []).forEach(function(sid){ if(reg[sid] && !reg[sid].due_node) reg[sid].due_node = n.id; });
+  });
+  return reg;
+}
+
+function forgeStep(text, done){
+  var d = document.createElement("div");
+  d.className = "step" + (done ? " done" : "");
+  d.textContent = text;
+  $("forgeSteps").appendChild(d);
+  return d;
+}
+
+function looseJSON(raw){
+  var t = String(raw).replace(/```(?:json)?/gi, "");
+  var a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if(a < 0 || b <= a) return null;
+  try{ return JSON.parse(t.slice(a, b+1)); }catch(e){ return null; }
+}
+
+var forgeCtl = null;
+
+function forgeSkeleton(who, stake, tone, dr, attempt){
+  attempt = attempt || 1;
+  var step = forgeStep(attempt === 1 ? "Deciding the shape" : "Reworking the shape", false);
+  forgeCtl = new AbortController();
+  var seen = 0;
+
+  return sampleFn(skeletonPrompt(who, stake, tone, dr, pendingLore), {
+    modelTier: "default",
+    cache: {gcTime: 600000},
+    signal: forgeCtl.signal,
+    onText: function(u){
+      var n = (u.text.match(/"id"\s*:\s*"n/g) || []).length;
+      if(n !== seen){ seen = n; step.textContent = "Deciding the shape — " + n + " beats so far"; }
+    }
+  }).then(function(res){
+    var sk = looseJSON(res.text);
+    if(!sk || !Array.isArray(sk.nodes)){
+      if(attempt < 2){ step.textContent = "Came back malformed — trying once more"; return forgeSkeleton(who, stake, tone, dr, 2); }
+      throw {code:"invalid_json", message:"The outline did not come back as usable JSON."};
+    }
+    step.className = "step done";
+    step.textContent = sk.nodes.length + " beats laid out";
+    var v = forgeStep("Checking every ending is reachable", false);
+    var problems = verifySkeleton(sk);
+    if(problems.length && attempt < 2){
+      v.textContent = "Shape rejected — " + problems[0];
+      return forgeSkeleton(who, stake, tone, dr, 2);
+    }
+    v.className = "step done";
+    v.textContent = problems.length ? "Accepted with " + problems.length + " rough edge(s)" : "Every ending reachable";
+    return sk;
+  });
+}
+
+/* ============================ narrator ============================ */
+function hasArc(){ return !!(S && S.skeleton); }
+
+function rulesTurn(){
+  var r = [
+"You are the narrator of an interactive story for one reader. You write one scene at a time and then stop.",
+"",
+"THE READER: " + S.who + ".",
+"THE DRIVE: they " + drive().verb + " " + S.stake + ".",
+"TONE — " + (TONE_NOTE[S.tone] || TONE_NOTE.grim),
+"",
+"HOW TO WRITE A TURN",
+"- Second person, present tense. 110 to 180 words. No headings, no titles, no bold.",
+"- Begin from the consequence of what the reader just did. Never narrate a decision they have not made.",
+"- End at a live decision point, mid-pressure. Do not summarise, do not moralise, do not ask 'what do you do?'.",
+"- Honour the STATE, the CHRONICLE and the RECORD you are given. Contradicting them is the one unforgivable error.",
+"- Introduce at most one new named thing per turn.",
+"- The reader may type an action of their own. Let it work, fail, or backfire on its merits. Never refuse it as out of bounds.",
+""];
+
+  if(S.lore){
+    r.push(
+"THE WORLD. Passages from its source document are given to you each turn under [WORLD]. They are canon: true, fixed, never to be contradicted. Where the document is silent, invent freely in its register. Prefer its names, places and terms over inventions of your own, and do not explain it to the reader as if from outside — you are writing from inside it.",
+"");
+  }
+
+  if(hasArc()){
+    r.push(
+"THE BEAT. You are given the outline's current beat: what it is for and the event that moves the story on. Most turns do not move it — the reader is inside the beat, and the scene is pressure and texture. Set \"satisfied\" true only when that event has actually happened, however the reader got there. When it is true, choose \"next\" from the branches offered; nothing else is legal.",
+"",
+"SETUPS. You may be given facts about the world that are ready to pay off. They are true and the reader has never been given them. Pay one off only when the scene genuinely wants it — a reveal that arrives because it was scheduled reads as machinery. When you pay one off, the prose must actually carry it, in the terms it was written. Do not substitute a different explanation. Most turns pay off nothing.",
+"");
+  } else {
+    r.push(
+"ENDING. There is no outline: you are pacing this yourself. Set \"ending\" to \"kept\" (" + drive().kept + ") or \"lost\" (" + drive().lost + ") only when it is truly earned — a final act, resolve reaching 0, or the drive decisively settled. Before turn 10, end only on a plainly fatal act.",
+"");
+  }
+
+  r.push(
+"CHOICES: exactly three, each a different KIND of act. Roughly: one that engages directly, one that costs something or evades, one that is lateral — look closer, refuse, ask, wait, lie. Under 14 words each, concrete, no outcome revealed.",
+"",
+"RESOLVE is a 0-10 meter. Subtract for wounds, exhaustion, dread, loss. Most turns change it by 0 or -1.",
+"",
+"FORMAT — reply with exactly this, nothing before or after:",
+"",
+"<the prose>",
+"",
+"@CHOICES",
+"- <first>",
+"- <second>",
+"- <third>",
+"",
+"@PUBLIC",
+'{"beat":"<one clause, under 12 words>","place":"<where they are now>","resolve":<0-10>,"gain":[],"lose":[],"edges":[["subject","predicate","object"]],"invalidate":[]}',
+"",
+"@NODE",
+hasArc() ? '{"satisfied":false,"next":null}' : '{"ending":null}');
+
+  if(hasArc()) r.push("", "@PRIVATE", '{"spend":[]}');
+
+  r.push("",
+'"edges" are durable facts the reader now knows — few, and only what the scene established. "invalidate" holds edge ids from the RECORD that this scene made untrue.' +
+(hasArc() ? ' "spend" holds the ids of any setups this scene actually paid off.' : "") +
+" Every JSON block must be valid and on one line.");
+
+  return r.join("\n");
+}
+
+function currentNode(){
+  var sk = S.skeleton, id = S.node;
+  for(var i=0;i<sk.nodes.length;i++) if(sk.nodes[i].id === id) return sk.nodes[i];
+  return sk.nodes[0];
+}
+function routesFrom(id){
+  return (S.skeleton.edges || []).filter(function(e){ return e.from === id; });
+}
+function dueSecrets(){
+  var node = currentNode(), out = [];
+  for(var k in S.secrets){
+    var s = S.secrets[k];
+    if(s.status === "sown" && s.due_node === node.id) out.push(s);
+  }
+  return out;
+}
+function liveEdges(){
+  return S.edges.filter(function(e){ return e.t_inv === null; });
+}
+function retrieveSpans(action){
+  var hay = (action + " " + (S.transcript.length ? S.transcript[S.transcript.length-1].prose : "")).toLowerCase();
+  var hits = liveEdges().filter(function(e){
+    return hay.indexOf(String(e.s).toLowerCase()) >= 0 || hay.indexOf(String(e.o).toLowerCase()) >= 0;
+  });
+  return hits.slice(-3);
+}
+
+function contextTurn(action){
+  var st = { place:S.place, resolve:S.resolve,
+             carrying:S.items.length ? S.items : ["nothing of note"], turn:S.turn + 1 };
+  var chron = S.beats.slice(-40).map(function(b,i){ return (i+1)+". "+b; }).join("\n");
+  var spans = retrieveSpans(action).map(function(e){ return "- (" + e.id + ") " + e.span; });
+  var parts = [];
+
+  if(hasArc()){
+    var node = currentNode();
+    var routes = routesFrom(node.id).map(function(e){ return "  " + e.to + " — " + (e.gate||"(no condition)"); });
+    parts.push(
+      "[BEAT] " + node.id + (node.terminal ? " — ENDING (" + node.terminal + ")" : ""),
+      "for: " + node.want,
+      "moves on when: " + node.exit,
+      "turns spent here: " + S.nodeTurns,
+      routes.length ? "branches:\n" + routes.join("\n") : "branches: none — this beat closes the book",
+      "");
+  }
+
+  var lore = retrieveLore(action);
+  if(lore.length) parts.push("[WORLD — canon]\n" + lore.join("\n\n"), "");
+  parts.push("[STATE]\n" + JSON.stringify(st), "", "[CHRONICLE]\n" + (chron || "(nothing yet)"));
+  if(spans.length) parts.push("", "[RECORD]\n" + spans.join("\n"));
+
+  if(hasArc()){
+    var due = dueSecrets().map(function(s){ return "- [" + s.id + "] " + s.claim; });
+    if(due.length) parts.push("", "[READY TO PAY OFF — true, not yet given]\n" + due.join("\n"));
+  }
+
+  parts.push("", "[READER]\n" + action);
+  return parts.join("\n");
+}
+
+function buildInput(action){
+  var turns = [{role:"user", content: rulesTurn()}];
+  S.history.slice(-8).forEach(function(t){ turns.push(t); });
+  turns.push({role:"user", content: contextTurn(action)});
+  return turns;
+}
+
+/* ============================ parsing ============================ */
+function proseOnly(raw){
+  var idx = [raw.indexOf("@CHOICES"), raw.indexOf("@PUBLIC"), raw.indexOf("@NODE"), raw.indexOf("@PRIVATE")]
+              .filter(function(i){ return i >= 0; });
+  var cut = idx.length ? Math.min.apply(null, idx) : raw.length;
+  return raw.slice(0, cut).trim();
+}
+function blockJSON(raw, tag){
+  var i = raw.indexOf(tag);
+  if(i < 0) return null;
+  var tail = raw.slice(i + tag.length);
+  var a = tail.indexOf("{");
+  if(a < 0) return null;
+  var depth = 0, end = -1;
+  for(var k=a;k<tail.length;k++){
+    if(tail[k] === "{") depth++;
+    else if(tail[k] === "}"){ depth--; if(!depth){ end = k; break; } }
+  }
+  if(end < 0) return null;
+  try{ return JSON.parse(tail.slice(a, end+1)); }catch(e){ return null; }
+}
+function parseReply(raw){
+  var ci = raw.indexOf("@CHOICES");
+  var after = [raw.indexOf("@PUBLIC"), raw.indexOf("@NODE"), raw.indexOf("@PRIVATE")]
+                .filter(function(i){ return i > ci; });
+  var choices = [];
+  if(ci >= 0){
+    var end = after.length ? Math.min.apply(null, after) : raw.length;
+    choices = raw.slice(ci + 8, end).split("\n").map(function(l){
+      return l.replace(/^\s*(?:[-*\u2022]|\d+[.)])\s*/, "").trim();
+    }).filter(Boolean).slice(0, 3);
+  }
+  return { prose: proseOnly(raw), choices: choices,
+           pub: blockJSON(raw, "@PUBLIC"), node: blockJSON(raw, "@NODE"),
+           priv: blockJSON(raw, "@PRIVATE") };
+}
+function sentenceFor(prose, subject){
+  var subj = String(subject).toLowerCase();
+  var sents = prose.split(/(?<=[.!?])\s+/);
+  for(var i=0;i<sents.length;i++){
+    if(sents[i].toLowerCase().indexOf(subj) >= 0) return sents[i].trim();
+  }
+  return sents.length ? sents[0].trim() : "";
+}
+
+/* ============================ rendering ============================ */
+function renderProse(text){
+  var el = $("prose"); el.innerHTML = "";
+  text.split(/\n{2,}/).forEach(function(t){
+    t = t.trim(); if(!t) return;
+    var p = document.createElement("p"); p.textContent = t; el.appendChild(p);
+  });
+}
+function renderThinking(){ $("prose").innerHTML = '<p class="thinking">The page is being written</p>'; }
+function renderMargin(fresh){
+  $("place").textContent = S.place || "—";
+  var lit = "", dim = "";
+  for(var i=0;i<10;i++){ if(i < S.resolve) lit += "\u25A0"; else dim += "\u25A1"; }
+  $("marks").innerHTML = '<span>'+lit+'</span><span class="spent">'+dim+'</span>';
+
+  var arcHead = $("arcHead");
+  if(!hasArc()){
+    $("arc").classList.add("hidden"); if(arcHead) arcHead.classList.add("hidden");
+  } else {
+    $("arc").classList.remove("hidden"); if(arcHead) arcHead.classList.remove("hidden");
+    var total = S.skeleton.nodes.length, seen = S.visited.length;
+    var a = "";
+    for(var j=0;j<total;j++) a += (j < seen) ? "\u2022" : "\u00B7";
+    $("arc").innerHTML = '<span>'+a.slice(0,seen)+'</span><span class="unlit">'+a.slice(seen)+'</span>';
+  }
+
+  var ul = $("carrying"); ul.innerHTML = "";
+  if(!S.items.length){
+    var li0 = document.createElement("li"); li0.className="empty"; li0.textContent="empty-handed"; ul.appendChild(li0);
+  } else S.items.forEach(function(it){
+    var li = document.createElement("li"); li.textContent = it; ul.appendChild(li);
+  });
+
+  var bl = $("beats"); bl.innerHTML = "";
+  S.beats.forEach(function(b,i){
+    var li = document.createElement("li"); li.textContent = b;
+    if(fresh && i === S.beats.length-1) li.className = "fresh";
+    bl.appendChild(li);
+  });
+  bl.scrollTop = bl.scrollHeight;
+}
+function renderChoices(list){
+  var box = $("choices"); box.innerHTML = "";
+  if(!list.length){ hide(box); return; }
+  list.forEach(function(text){
+    var b = document.createElement("button");
+    b.type="button"; b.className="choice"; b.textContent = text;
+    b.addEventListener("click", function(){ takeTurn(text); });
+    box.appendChild(b);
+  });
+  show(box);
+}
+function setBusy(on){
+  busy = on;
+  var btns = $("choices").querySelectorAll("button");
+  for(var i=0;i<btns.length;i++) btns[i].disabled = on;
+  $("freeInput").disabled = on; $("freeGo").disabled = on;
+  if(on) show($("stopWrap")); else hide($("stopWrap"));
+}
+
+/* ============================ the turn ============================ */
+function enterNode(id){
+  S.node = id;
+  S.nodeTurns = 0;
+  if(S.visited.indexOf(id) < 0) S.visited.push(id);
+  var n = currentNode();
+  (n.sow || []).forEach(function(s){
+    var rec = S.secrets[s.id];
+    if(rec && rec.status === "latent") rec.status = "sown";
+  });
+}
+
+function takeSnapshot(){
+  var st = {};
+  for(var k in S.secrets) st[k] = S.secrets[k].status;
+  S.snaps.push({
+    turn:S.turn, node:S.node, nodeTurns:S.nodeTurns, nodeStart:(S.nodeTurns === 1),
+    place:S.place, resolve:S.resolve, items:S.items.slice(),
+    visited:S.visited.slice(), edgeSeq:S.edgeSeq,
+    edges:JSON.parse(JSON.stringify(S.edges)), secretStatus:st,
+    tLen:S.transcript.length, hLen:S.history.length, bLen:S.beats.length,
+    label:S.beats.length ? S.beats[S.beats.length-1] : "the opening",
+    choices:(S.lastChoices || []).slice()
+  });
+  if(S.snaps.length > 10) S.snaps.shift();
+}
+
+function restoreSnapshot(i){
+  var p = S.snaps[i];
+  if(!p) return;
+  S.turn = p.turn; S.node = p.node; S.nodeTurns = p.nodeTurns;
+  S.place = p.place; S.resolve = p.resolve; S.items = p.items.slice();
+  S.visited = p.visited.slice(); S.edgeSeq = p.edgeSeq;
+  S.edges = JSON.parse(JSON.stringify(p.edges));
+  for(var k in S.secrets) S.secrets[k].status = p.secretStatus[k] || "latent";
+  S.transcript = S.transcript.slice(0, p.tLen);
+  S.history    = S.history.slice(0, p.hLen);
+  S.beats      = S.beats.slice(0, p.bLen);
+  S.lastChoices = (p.choices || []).slice();
+  S.snaps = S.snaps.slice(0, i + 1);
+  S.ended = null;
+
+  hide($("ending")); hide($("turnback")); hide($("echo"));
+  var last = S.transcript[S.transcript.length - 1];
+  renderProse(last ? last.prose : "");
+  renderMargin(false);
+  renderChoices(S.lastChoices);
+  show($("freeform"));
+  notice("playNotice", "<b>Turned back.</b> The pages after this one are gone.");
+  save();
+}
+
+function turningPoints(){
+  var out = [];
+  for(var i = S.snaps.length - 2; i >= 0 && out.length < 6; i--){
+    if(S.snaps[i].nodeStart || i === S.snaps.length - 2) out.push(i);
+  }
+  return out;
+}
+
+function showTurnback(){
+  var box = $("turnback");
+  var pts = turningPoints();
+  if(!pts.length){
+    box.innerHTML = "<p class='tb-none'>Nothing to turn back to yet.</p>";
+    show(box); return;
+  }
+  box.innerHTML = "<h3>Turn back to</h3>";
+  pts.forEach(function(i){
+    var p = S.snaps[i];
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "tb";
+    b.innerHTML = "<span class='tb-t'>turn " + p.turn + "</span> " + p.label;
+    b.addEventListener("click", function(){ restoreSnapshot(i); });
+    box.appendChild(b);
+  });
+  var c = document.createElement("button");
+  c.type = "button"; c.className = "btn-quiet"; c.textContent = "Stay here";
+  c.style.marginTop = "12px";
+  c.addEventListener("click", function(){ hide(box); });
+  box.appendChild(c);
+  show(box);
+}
+
+function replayOutline(){
+  var sk = S.skeleton, who = S.who, stake = S.stake, tone = S.tone, dr = S.drive, lo = S.lore;
+  S = blankState(who, stake, tone, dr);
+  S.skeleton = sk; S.lore = lo;
+  S.secrets = registerSecrets(sk);
+  enterNode(sk.start);
+  hide($("ending")); hide($("turnback")); hide($("echo"));
+  notice("playNotice", "<b>The same outline, walked again.</b> What you left behind last time is still in it.");
+  takeTurn("Open the story. Put me in motion, already in trouble.");
+}
+
+function takeTurn(action){
+  if(busy || !S || S.ended) return;
+  notice("playNotice", "");
+  $("echo").textContent = "You chose: " + action;
+  show($("echo"));
+  renderThinking(); hide($("choices")); setBusy(true);
+
+  ctl = new AbortController();
+  sampleFn(buildInput(action), {
+    cache: false, modelTier: $("pace").value, signal: ctl.signal,
+    onText: function(u){ renderProse(proseOnly(u.text) || u.text); }
+  }).then(function(res){
+    applyTurn(action, res.text);
+  }).catch(function(e){
+    setBusy(false);
+    if(e && e.code === "cancelled"){
+      if(e.text) renderProse(proseOnly(e.text));
+      notice("playNotice", "<b>Stopped.</b> Choose again, or write your own action.");
+      renderChoices([]); show($("freeform")); return;
+    }
+    handleError(e);
+  });
+}
+
+function applyTurn(action, text){
+  var r = parseReply(text);
+  var prose = r.prose || text;
+
+  S.history.push({role:"user", content: contextTurn(action)});
+  S.history.push({role:"assistant", content: text});
+  S.transcript.push({action: action, prose: prose});
+  S.turn++; S.nodeTurns++;
+
+  var p = r.pub;
+  if(p){
+    if(typeof p.place === "string" && p.place.trim()) S.place = p.place.trim();
+    if(typeof p.resolve === "number" && isFinite(p.resolve))
+      S.resolve = Math.max(0, Math.min(10, Math.round(p.resolve)));
+    (p.gain||[]).forEach(function(g){ g = String(g).trim();
+      if(g && S.items.indexOf(g) < 0) S.items.push(g); });
+    (p.lose||[]).forEach(function(l){ l = String(l).trim().toLowerCase();
+      S.items = S.items.filter(function(it){ return it.toLowerCase().indexOf(l) < 0; }); });
+    (p.invalidate||[]).forEach(function(id){
+      S.edges.forEach(function(e){ if(e.id === String(id) && e.t_inv === null) e.t_inv = S.turn; });
+    });
+    (p.edges||[]).forEach(function(tri){
+      if(!Array.isArray(tri) || tri.length < 3) return;
+      S.edgeSeq++;
+      S.edges.push({ id:"e"+S.edgeSeq, s:String(tri[0]), p:String(tri[1]), o:String(tri[2]),
+                     t_est:S.turn, t_inv:null, span:sentenceFor(prose, tri[0]) });
+    });
+    if(typeof p.beat === "string" && p.beat.trim()) S.beats.push(p.beat.trim());
+  }
+
+  if(hasArc()){
+    /* invariant 1 — a payoff must name a setup that is currently ready */
+    var dueIds = dueSecrets().map(function(s){ return s.id; });
+    ((r.priv && r.priv.spend) || []).forEach(function(id){
+      id = String(id);
+      if(dueIds.indexOf(id) >= 0){ S.secrets[id].status = "spent"; S.secrets[id].t_spent = S.turn; }
+    });
+
+    var node = currentNode();
+
+    /* invariant 2 — next must be a branch the outline allows */
+    if(r.node && r.node.satisfied === true){
+      var legal = routesFrom(node.id).map(function(e){ return e.to; });
+      var next = r.node.next ? String(r.node.next) : null;
+      if(next && legal.indexOf(next) >= 0) enterNode(next);
+      else if(legal.length === 1) enterNode(legal[0]);
+    }
+    if(currentNode().terminal) S.ended = currentNode().terminal;
+  } else if(r.node && (r.node.ending === "kept" || r.node.ending === "lost")){
+    S.ended = r.node.ending;
+  }
+  if(S.resolve <= 0 && !S.ended) S.ended = "lost";
+
+  renderProse(prose); renderMargin(true); setBusy(false);
+
+  S.lastChoices = r.choices.slice();
+  takeSnapshot();
+  if(S.snaps.length > 1) show($("turnbackBtn"));
+  save();
+
+  if(S.ended){ finish(); return; }
+  renderChoices(r.choices);
+  if(!r.choices.length) notice("playNotice", "<b>No paths offered.</b> Write what you do next.");
+  show($("freeform"));
+  $("freeInput").value = "";
+}
+
+function finish(){
+  hide($("choices")); hide($("freeform"));
+  $("endTitle").textContent = S.ended === "kept" ? drive().keptTitle : drive().lostTitle;
+  if(hasArc()){
+    var unspent = 0;
+    for(var k in S.secrets){
+      if(S.secrets[k].status !== "spent"){ S.secrets[k].status = "dormant"; unspent++; }
+    }
+    $("endSub").textContent = S.turn + " turns, " + S.visited.length + " of " +
+      S.skeleton.nodes.length + " beats in the outline.";
+    $("unlearned").textContent = unspent === 0
+      ? "There was nothing left that you had not found out."
+      : unspent + " true things about this world went unlearned. They were there from the beginning.";
+    show($("unlearned"));
+  } else {
+    $("endSub").textContent = S.turn + " turns. " + S.who + ", who " + drive().verb + " " + S.stake + ".";
+    hide($("unlearned"));
+  }
+  if(downloadsNs) show($("saveTranscript"));
+  if(hasArc()) show($("replay")); else hide($("replay"));
+  show($("ending"));
+  clearSave();
+}
+
+function handleError(e){
+  var code = (e && e.code) || "upstream_error", msg;
+  if(code === "not_granted" || code === "sampling_disabled" || code === "not_declared" || code === "capability_disabled"){
+    msg = "<b>The narrator cannot be reached.</b> This page writes each turn with Claude, on your account, and permission was not given.";
+  } else if(code === "rate_limited"){
+    msg = "<b>Too many turns, too fast.</b> Wait a minute and choose again — the run is saved.";
+  } else if(code === "session_expired"){
+    msg = "<b>Your session ended.</b> Sign in again and reload; the run is saved.";
+  } else if(code === "refused"){
+    msg = "<b>That turn could not be written.</b> Try a different action."; renderProse("");
+  } else if(code === "prompt_too_large"){
+    msg = "<b>The chronicle outgrew one page.</b> Older beats will be dropped from here on.";
+    S.beats = S.beats.slice(-20); S.history = S.history.slice(-4);
+  } else if(code === "invalid_json"){
+    msg = "<b>The arc came back malformed.</b> Begin again.";
+  } else {
+    msg = "<b>The writing broke off.</b> " + (e && e.message ? String(e.message) : "") + " Choose again.";
+    if(e && e.text) renderProse(proseOnly(e.text));
+  }
+  notice("playNotice", msg);
+  renderChoices([]); show($("freeform")); save();
+}
+
+function transcriptText(){
+  var out = ["THE MARGIN","","You are " + S.who + ", and you " + drive().verb + " " + S.stake + ".",
+             "Tone: " + S.tone,"","—————",""];
+  S.transcript.forEach(function(t,i){
+    if(i > 0) out.push("> " + t.action, "");
+    out.push(t.prose, "");
+  });
+  out.push("—————","", S.ended === "kept" ? drive().keptTitle : drive().lostTitle, S.turn + " turns.");
+  return out.join("\n");
+}
+
+/* ============================ wiring ============================ */
+function buildSeeds(){
+  var sel = $("drive");
+  Object.keys(DRIVES).forEach(function(k){
+    var o = document.createElement("option");
+    o.value = k; o.textContent = DRIVES[k].verb;
+    sel.appendChild(o);
+  });
+  SEEDS.forEach(function(s){
+    var b = document.createElement("button");
+    b.type="button"; b.className="seed";
+    b.innerHTML = s.who + ", who " + DRIVES[s.drive].verb + " " + s.stake + ". <em>" + s.note + "</em>";
+    b.addEventListener("click", function(){
+      $("who").value = s.who; $("drive").value = s.drive; $("stake").value = s.stake; $("who").focus();
+    });
+    $("seedList").appendChild(b);
+  });
+}
+
+function startArcless(who, stake, tone, dr){
+  S = blankState(who, stake, tone, dr);
+  S.skeleton = null;
+  S.lore = pendingLore;
+  hide($("forging")); enterPlay();
+  notice("playNotice", "<b>Running without an outline.</b> The narrator paces this one itself.");
+  takeTurn("Open the story. Put me in motion, already in trouble.");
+}
+
+function startRun(){
+  var who = $("who").value.trim() || SEEDS[0].who;
+  var stake = $("stake").value.trim() || SEEDS[0].stake;
+  var tone = document.querySelector('input[name=tone]:checked').value;
+  var dr = $("drive").value;
+  hide($("opening")); show($("forging")); show($("skipArc"));
+  $("forgeSteps").innerHTML = ""; notice("forgeNotice","");
+  if(pendingLore) forgeStep("Reading " + pendingLore.name + " — " + pendingLore.chunks.length + " passages", true);
+  $("skipArc").onclick = function(){
+    if(forgeCtl) try{ forgeCtl.abort(); }catch(e){}
+    startArcless(who, stake, tone, dr);
+  };
+
+  forgeSkeleton(who, stake, tone, dr).then(function(sk){
+    hide($("skipArc"));
+    S = blankState(who, stake, tone, dr);
+    S.skeleton = sk;
+    S.lore = pendingLore;
+    S.secrets = registerSecrets(sk);
+    forgeStep(Object.keys(S.secrets).length + " things it will know and not say", true);
+    enterNode(sk.start);
+    hide($("forging")); enterPlay();
+    takeTurn("Open the story. Put me in motion, already in trouble.");
+  }).catch(function(e){
+    if(e && e.code === "cancelled") return;
+    hide($("skipArc"));
+    $("forgeTitle").textContent = "No outline this time";
+    var why = (e && e.code === "refused")
+      ? "The outline wasn't written."
+      : ((e && e.code) || "failed") + ". " + ((e && e.message) ? String(e.message) : "");
+    notice("forgeNotice", "<b>" + why + "</b> The story still works without one — the narrator paces it turn by turn instead, which is how this ran before outlines existed." +
+      " <button id='goOn' class='btn' type='button' style='margin-left:8px'>Play anyway</button>" +
+      " <button id='backBtn' class='btn-quiet' type='button' style='margin-left:6px'>Back</button>");
+    var go = $("goOn");
+    if(go) go.addEventListener("click", function(){ startArcless(who, stake, tone, dr); });
+    var bb = $("backBtn");
+    if(bb) bb.addEventListener("click", function(){ hide($("forging")); show($("opening")); });
+  });
+}
+
+function enterPlay(){
+  show($("play")); show($("paceWrap")); show($("abandon"));
+  renderMargin(false);
+}
+
+$("begin").addEventListener("click", function(){
+  if(!sampleFn){
+    notice("openNotice", "<b>The narrator is not available here.</b> This page writes every turn with Claude. Open it from claude.ai and allow it when asked.");
+    return;
+  }
+  startRun();
+});
+$("resume").addEventListener("click", function(){
+  var o = loadSave(); if(!o) return;
+  S = o; enterPlay();
+  var last = S.transcript[S.transcript.length-1];
+  renderProse(last ? last.prose : ""); renderMargin(false);
+  notice("playNotice", "<b>Picked up where you left off.</b>");
+  if(S.snaps && S.snaps.length > 1) show($("turnbackBtn"));
+  renderChoices(S.lastChoices || []); show($("freeform"));
+});
+$("abandon").addEventListener("click", function(){
+  if(ctl) try{ ctl.abort(); }catch(e){}
+  clearSave(); S = null;
+  hide($("play")); hide($("ending")); hide($("turnback")); show($("opening"));
+  hide($("paceWrap")); hide($("abandon")); hide($("turnbackBtn"));
+  notice("playNotice",""); notice("openNotice","");
+  $("echo").textContent=""; hide($("echo"));
+});
+$("again").addEventListener("click", function(){
+  hide($("ending")); hide($("saveTranscript")); hide($("replay")); hide($("turnback"));
+  hide($("play")); show($("opening"));
+  hide($("paceWrap")); hide($("abandon")); hide($("turnbackBtn"));
+  $("echo").textContent=""; hide($("echo")); notice("playNotice","");
+});
+$("stop").addEventListener("click", function(){ if(ctl) ctl.abort(); });
+$("turnbackBtn").addEventListener("click", function(){
+  if(busy) return;
+  if($("turnback").classList.contains("hidden")) showTurnback(); else hide($("turnback"));
+});
+$("endTurnback").addEventListener("click", function(){ showTurnback(); });
+$("replay").addEventListener("click", function(){ replayOutline(); });
+
+function submitFree(){
+  var v = $("freeInput").value.trim();
+  if(!v || busy) return;
+  takeTurn(v);
+}
+$("freeGo").addEventListener("click", submitFree);
+$("freeInput").addEventListener("keydown", function(e){ if(e.key === "Enter") submitFree(); });
+[$("who"), $("stake")].forEach(function(el){
+  el.addEventListener("keydown", function(e){ if(e.key === "Enter") $("begin").click(); });
+});
+$("saveTranscript").addEventListener("click", function(){
+  if(!downloadsNs) return;
+  downloadsNs.save({filename:"the-margin.txt", data: transcriptText()}).catch(function(){});
+});
+
+var pendingLore = null;
+
+$("loreFile").addEventListener("change", function(e){
+  var f = e.target.files && e.target.files[0];
+  if(!f){ pendingLore = null; $("loreStat").textContent = ""; hide($("loreClear")); return; }
+  if(f.size > 2000000){
+    $("loreStat").textContent = "That file is very large — trim it to a few thousand words.";
+    pendingLore = null; return;
+  }
+  $("loreStat").textContent = "Reading…";
+  loadLore(f).then(function(lo){
+    pendingLore = lo;
+    $("loreStat").textContent = lo.name + " — " + lo.chunks.length + " passages, " +
+      Math.round(lo.text.length / 1000) + "k characters" +
+      (lo.text.length > 24000 ? " (the outline will see the first 24k; the whole of it stays searchable in play)" : "");
+    show($("loreClear"));
+  }).catch(function(err){
+    pendingLore = null;
+    $("loreStat").textContent = String(err.message || "that file could not be read");
+  });
+});
+$("loreClear").addEventListener("click", function(){
+  pendingLore = null; $("loreFile").value = ""; $("loreStat").textContent = ""; hide($("loreClear"));
+});
+
+buildSeeds();
+if(loadSave()) show($("resume"));
+
+if(window.claude && typeof window.claude.use === "function"){
+  window.claude.use("sample").then(function(ns){
+    sampleFn = ns;
+    if(!ns) notice("openNotice", "<b>The narrator is not available here.</b> This page writes every turn with Claude. Open it from claude.ai to play.");
+  }).catch(function(){});
+  window.claude.use("downloads").then(function(ns){ downloadsNs = ns; }).catch(function(){});
+} else {
+  notice("openNotice", "<b>The narrator is not available here.</b> This page writes every turn with Claude. Open it from claude.ai to play.");
+}
+
+})();
+</script>
+</body>
+</html>

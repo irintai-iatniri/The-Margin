@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Margin — build spec v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E6DF; --paper-deep:#D9DCD2; --ink:#23272A; --ink-soft:#5C6367;
+  --rule:#B7BCB2; --blood:#7A2E36; --brass:#856320;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141619; --paper-deep:#1B1E22; --ink:#DEDDD5; --ink-soft:#959B99;
+    --rule:#333840; --blood:#C87B80; --brass:#C7A356;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141619; --paper-deep:#1B1E22; --ink:#DEDDD5; --ink-soft:#959B99;
+  --rule:#333840; --blood:#C87B80; --brass:#C7A356;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"Spectral",Georgia,"Iowan Old Style",serif;font-size:18px;line-height:1.68;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem;margin:0 auto;padding:clamp(20px,5vw,52px) clamp(18px,5vw,28px) 90px}
+h1{font-family:"Bodoni Moda",Didot,serif;font-weight:600;font-size:clamp(30px,7vw,46px);
+  line-height:1.0;letter-spacing:-.015em;margin:0 0 8px}
+.deck{color:var(--ink-soft);font-style:italic;font-size:17px;margin:0 0 6px}
+.stamp{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);
+  border-top:1px solid var(--rule);padding-top:10px;margin:26px 0 40px}
+h2{font-family:"Bodoni Moda",Didot,serif;font-weight:600;font-size:clamp(22px,4.6vw,29px);
+  line-height:1.15;margin:56px 0 4px;padding-top:18px;border-top:1px solid var(--rule)}
+h2 .n{color:var(--blood);font-size:.62em;vertical-align:.28em;margin-right:.45em;font-weight:400}
+h3{font-size:17px;font-weight:600;margin:30px 0 6px}
+p{margin:0 0 1.05em}
+ul,ol{margin:0 0 1.1em;padding-left:1.15em}
+li{margin-bottom:.42em}
+code{font-family:"IBM Plex Mono",monospace;font-size:.83em;background:var(--paper-deep);
+  padding:1px 4px}
+pre{font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.55;
+  background:var(--paper-deep);border-left:2px solid var(--rule);
+  padding:14px 16px;overflow-x:auto;margin:0 0 1.2em}
+pre code{background:none;padding:0;font-size:inherit}
+.call{border-left:2px solid var(--blood);padding:2px 0 2px 15px;margin:0 0 1.3em}
+.call b{display:block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  color:var(--blood);font-weight:400;margin-bottom:3px}
+.risk{border-left:2px solid var(--brass);padding:2px 0 2px 15px;margin:0 0 1.3em}
+.risk b{display:block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  color:var(--brass);font-weight:400;margin-bottom:3px}
+table{width:100%;border-collapse:collapse;margin:0 0 1.3em;font-size:15.5px}
+th,td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--rule);
+  vertical-align:top}
+th{font-weight:600;font-size:13px;font-style:italic;color:var(--ink-soft)}
+td:first-child{padding-right:16px}
+.scroll{overflow-x:auto}
+.cut{color:var(--ink-soft);font-style:italic;font-size:16px;
+  border-left:2px solid var(--rule);padding-left:15px;margin:0 0 1.3em}
+.end{margin-top:60px;padding-top:16px;border-top:2px solid var(--blood);
+  font-style:italic;color:var(--ink-soft);font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>The Margin</h1>
+<p class="deck">Build spec v2 — a generated skeleton, filled at play.</p>
+<p class="stamp">v2.1 · matches the published build · the debt ledger and its thresholds are cut</p>
+
+<p>This is a gamebook, not a MUD. It has a curtain, and the curtain is what turns the transcript into a novel rather than a log. That single commitment decides most of what follows.</p>
+
+<p>The architecture is two layers. <strong>A skeleton of empty nodes, generated once from the premise, holds the arc.</strong> <strong>Play fills them, turn by turn, against whatever the player actually did.</strong> Nodes carry conditions, never prose — which is why a typed action can satisfy a node as well as a menu choice can. You do not leave the structure by improvising; you arrive at the same chokepoint by a route nobody wrote.</p>
+
+<h2><span class="n">01</span>What the model decides</h2>
+
+<p>The governing principle, and the reason v1 was too big: <strong>every mechanism added is a place where behaviour stops being the model's judgment and becomes the author's policy.</strong> The model is a better narrator than any threshold. What it lacks is persistence. That is the only gap the code should fill.</p>
+
+<div class="scroll">
+<table>
+<tr><th>The code decides</th><th>The model decides</th></tr>
+<tr><td>What is stored, and where</td><td>Whether this turn advanced the node</td></tr>
+<tr><td>What is assembled into the prompt</td><td>When a secret is spent</td></tr>
+<tr><td>Parsing and persisting the reply</td><td>Whether to sow, and what</td></tr>
+<tr><td>Two hard invariants (§5)</td><td>Resolve deltas, choices, endings</td></tr>
+</table>
+</div>
+
+<p>There is no pacing counter, no debt arithmetic, no target ratio, no pressure trigger. Those were four machines enforcing something an instruction enforces better.</p>
+
+<div class="cut">Cut from v1: the debt ledger, the pursued/reservoir partition, the 0.5 dormancy target, the ending-range pressure rule, and the two-shared-content-words retcon guard. The arc's own shape supplies the pressure — you are near the ending because you are two nodes from a terminal, not because a counter tripped.</div>
+
+<h2><span class="n">02</span>The premise</h2>
+
+<p>Three fields, and the middle one does more work than it looks like.</p>
+
+<pre><code>You are &lt;who&gt;, and you &lt;drive&gt; &lt;stake&gt;.</code></pre>
+
+<p><strong>The drive is not flavour — it selects an arc shape.</strong> A story about keeping something and a story about finding something are different machines, and an outline generated for one and retrofitted to the other comes out as the first with new nouns. Seven, each carrying the beats it implies and, critically, the mid-arc reversal that shape usually turns on:</p>
+
+<div class="scroll">
+<table>
+<tr><th>Drive</th><th>Beats are</th><th>The turn is usually</th></tr>
+<tr><td>cannot afford to lose</td><td>erosion of a grip already held</td><td>holding on costs something else they can't afford</td></tr>
+<tr><td>are protecting</td><td>threats on a schedule they don't set</td><td>the protected thing acts against its own safety</td></tr>
+<tr><td>are chasing</td><td>near-misses, closing distance</td><td>learning why it runs</td></tr>
+<tr><td>are searching for</td><td>findings, not distances</td><td>it is not what they were told</td></tr>
+<tr><td>owe</td><td>the clock and the collector</td><td>discovering what the debt bought</td></tr>
+<tr><td>are running from</td><td>distance gained and lost</td><td>running costs the thing that made running worth it</td></tr>
+<tr><td>must become</td><td>thresholds, each demanding a surrender</td><td>meeting what they'd be if they finished</td></tr>
+</table>
+</div>
+
+<p>The two terminal kinds stay <code>kept</code> and <code>lost</code> internally — the code does not need seven vocabularies — but the outline is told what they mean for this drive, and the ending screen and transcript use its words. <em>It survived</em> / <em>It didn't</em> for protecting. <em>The trail went cold</em> for searching.</p>
+
+<h3>The lore book</h3>
+
+<p>An optional <code>.txt</code> or <code>.md</code> upload. It is not a fourth field; it is a pre-seeded public record, and it reuses the retrieval already built for edges.</p>
+
+<ul>
+<li><strong>To the outline, whole</strong> — up to 24,000 characters, ahead of everything else, marked canon. The beat sheet is then plotted out of the document's own people and places.</li>
+<li><strong>To each turn, in pieces</strong> — split on blank lines and headings into passages of about 900 characters, each keyed by the capitalised terms inside it. Two passages retrieved per turn by keyword match against the action, the last scene, the place and the inventory. A hundred-page document costs the same per turn as a one-page one.</li>
+</ul>
+
+<div class="call"><b>decision — canon is fixed, silence is free</b>
+The narrator is told the document is true and may never be contradicted; that where it is silent, invention is free in its register; that its names are preferred over invented ones; and that it writes <em>from inside</em> the world rather than explaining it. That last clause is the one that matters in practice — the standard failure with uploaded lore is prose that reads like a wiki entry.</div>
+
+<div class="risk"><b>limit — keyword, not semantic</b>
+A passage that never names its own subject will not be retrieved. A section headed <b>Tarn Holloway</b> that then says only "he" throughout matches on the heading and nothing else. Headings are the strongest signal, so a structured document retrieves markedly better than one block of prose. Fixable with embeddings; not worth it until a run demonstrably suffers.</div>
+
+<h2><span class="n">03</span>The skeleton</h2>
+
+<p>Generated in one call at run start from the two blanks the player filled, then held fixed. Twelve to eighteen nodes. Small enough to print, hand-edit, and verify offline.</p>
+
+<pre><code>node {
+  id
+  want      what this node is for — one line
+  exit      what must be true to leave it
+  sow[]     secrets that open here
+  due[]     secrets that want spending here
+  terminal  null | "kept" | "lost"
+}
+
+edge { from, to, gate }</code></pre>
+
+<p>A node says <em>a trust must break here</em>. It does not say whose, or how, or in what room. That is the whole reason the same skeleton can run twice and produce two unrecognisable books.</p>
+
+<h3>Generation prompt, in outline</h3>
+<ul>
+<li>One opening node, two or three terminals, at least one of each kind.</li>
+<li>Two chokepoints every route passes through — that is what makes it a gamebook rather than a sprawl.</li>
+<li>At least three nodes off the main line, reachable but not required. These are where the unpursued threads live.</li>
+<li>Sow more secrets than the terminals need. A skeleton that sows exactly what it spends produces a tidy, guessable world.</li>
+</ul>
+
+<div class="call"><b>decision — verify, don't trust</b>
+After generation, check offline: every terminal reachable, no orphan nodes, no node whose <code>exit</code> contradicts its inbound <code>gate</code>. Cheap, deterministic, and it catches the one failure that would strand a player. Regenerate once on failure, then ship whatever comes back second.</div>
+
+<h2><span class="n">04</span>Two stores</h2>
+
+<p>Unchanged from v1, and the part of the design I would break the build over.</p>
+
+<pre><code>PUBLIC   what the player has been shown
+  state      { place, resolve, items[], turn, node }
+  chronicle  [{ t, beat }]
+  transcript [{ t, action, prose }]
+
+PRIVATE  what is true
+  secrets [{ id, claim, subject[], node_due,
+             status: sown|due|spent|dormant }]
+
+EDGES    spanning both
+  { id, s, p, o, t_est, t_inv,
+    span { t, start, end }, visibility }</code></pre>
+
+<p>Three things carry their weight and nothing else does:</p>
+
+<ul>
+<li><strong>Written together, neither derived from the other.</strong> A private fact is committed at the moment the silence is written, not extracted from the prose afterward. That is what makes an authored omission possible, and it is why a pure state-tracker cannot foreshadow.</li>
+<li><strong><code>t_inv</code>, not deletion.</strong> One field. It is the entire difference between a log and a memory: <em>what is true now</em> and <em>what was true at turn 20</em> become the same query.</li>
+<li><strong>Spans, not triples.</strong> When a retrieved edge matters to the current scene, send the sentence that established it. The triple is for selection; the prose is for grounding.</li>
+</ul>
+
+<h2><span class="n">05</span>Turn pipeline</h2>
+
+<ol>
+<li><strong>Act.</strong> A menu choice or free text. No distinction downstream.</li>
+<li><strong>Assemble.</strong> Narrator rules, current node (<code>want</code> + <code>exit</code>), public state and chronicle whole, secrets due at this node verbatim, two or three provenance spans, last four turns of prose. About 2,800 tokens against a 16,000 ceiling.</li>
+<li><strong>Generate.</strong> Stream the prose; parse the trailing blocks on resolve.</li>
+<li><strong>Commit.</strong> Apply the public delta, append chronicle and transcript, insert edges with spans, mark secrets, and — if <code>satisfied</code> — move to the node the gates allow.</li>
+</ol>
+
+<h2><span class="n">06</span>Output contract</h2>
+
+<pre><code>&lt;prose&gt;
+
+@CHOICES
+- three, each a different kind of act
+
+@PUBLIC
+{"beat":"", "place":"", "resolve":n,
+ "gain":[], "lose":[],
+ "edges":[["subj","pred","obj"]],
+ "invalidate":["edge_id"]}
+
+@NODE
+{"satisfied": false, "next": null}
+
+@PRIVATE
+{"spend":[], "sow":[]}</code></pre>
+
+<p><code>satisfied</code> is the pacing decision, and it is the model's. Most turns are false — the player is inside a node, poking at it, and the story is texture and pressure. It goes true when the <code>exit</code> is genuinely met, however the player got there.</p>
+
+<p>Two invariants, enforced in code because they are the only two that cannot be trusted to instruction:</p>
+
+<ul>
+<li><strong>A sown secret may not contradict a public edge with <code>t_inv = null</code>.</strong> Dropped silently on commit. The narrator may withhold anything; it may never assert what the record denies.</li>
+<li><strong><code>next</code> must be a node the current gates allow.</strong> Otherwise the move is refused and the turn stands. Everything else — pacing, spending, sowing — is the model's call and stays that way.</li>
+</ul>
+
+<div class="risk"><b>watch, don't build for</b>
+Stalling: the model never sets <code>satisfied</code> and a node runs eight turns. Likely cause is an <code>exit</code> too abstract to recognise, which is a skeleton-generation problem, not a runtime one. Fix it at §2 by asking for exits stated as observable events. Only if that fails, add the nudge — a line in assembly after five turns in a node — and nothing more.</div>
+
+<h2><span class="n">07</span>Turning back</h2>
+
+<p>The one affordance a printed gamebook has that a generated one does not: a thumb in an earlier page. Two forms, both cheap.</p>
+
+<p><strong>Turn back.</strong> A snapshot is taken after every committed turn — ten kept, capped. It does not copy the transcript; it records the length of each append-only array and truncates on restore, so a snapshot is a few hundred bytes plus the edge list. Restoring returns resolve, inventory, edges, visited beats, which setups had paid off, and the three choices that were on screen. The list offered is the turn each beat opened on, labelled by that beat's chronicle line, plus the immediately previous turn.</p>
+
+<p><strong>Walk it again.</strong> At an ending, with an outline present: same beats, same setups replanted, fresh run. This is the skeleton earning its keep — the outline is a world rather than a script, so a second pass takes different branches and learns different things, and what went unlearned last time is still sitting in it.</p>
+
+<div class="risk"><b>known difference</b>
+Turning back restores the state exactly, but the next scene is written fresh — the same situation, answered differently, never the same words twice. A printed gamebook gives identical prose on a re-read. This does not, and that is the honest trade for having a narrator rather than a printing press.</div>
+
+<h2><span class="n">08</span>Where the herrings come from</h2>
+
+<p>They are not a mechanism. They are the residue of the skeleton being larger than any one route through it.</p>
+
+<p>A run visits maybe nine of sixteen nodes. Secrets sown on the visited ones may or may not reach the nodes where they were due. Secrets attached to the nodes off the main line are implied by the world and never pursued — a false start, exactly, and nothing re-aims them at the player later. There is no dormancy target because there is no dial: the rate falls out of the ratio between the skeleton's size and a route's length, and if that rate comes out wrong the fix is a bigger skeleton, not a counter.</p>
+
+<p>This matters more than it sounds. If every implied thread pays off, the player learns within five turns that a mention means significance, and the prose becomes a menu they read past. The mystery is not a property of any single thread — it is the rate at which leads die unpursued. Waste is the medium, and a system that efficiently pays off all its setups destroys what it was optimising for.</p>
+
+<h2><span class="n">09</span>Degrading well</h2>
+
+<p>The outline is one model call before anything is playable, which makes it a single point of failure standing between a premise and a story. It must never be one.</p>
+
+<ul>
+<li><strong>Streamed, not awaited blind.</strong> Plain sampling with the JSON parsed on this side, so the forge screen counts beats as they arrive. A stalled counter is information; a spinner is not.</li>
+<li><strong>Default tier, twelve beats, terse fields.</strong> The first build asked the slowest tier for eighteen beats and fourteen setups — around 3,000 tokens of nested JSON, close enough to the length ceiling that truncation was live, and truncation fails as unparseable, which looks exactly like a hang.</li>
+<li><strong>Skip, always visible.</strong> Aborts the call and plays on without an outline.</li>
+<li><strong>Arcless is a real mode, not an error state.</strong> No beats, no setups, no arc meter; the narrator paces itself and calls its own ending. It is the build that existed before outlines, kept working, reachable from inside the failure.</li>
+</ul>
+
+<div class="call"><b>decision — a refusal is not a dead end</b>
+Any outline failure, refusal included, offers <em>Play anyway</em> rather than a back button. The premise the reader typed is the thing worth protecting; the outline is an enhancement to it.</div>
+
+<h2><span class="n">10</span>Build order</h2>
+
+<div class="scroll">
+<table>
+<tr><th>Phase</th><th>Ships</th><th>Status</th></tr>
+<tr><td>0</td><td>Edges with spans in <code>@PUBLIC</code>. Public store only.</td><td><strong>shipped</strong> — entity resolution still string-matched</td></tr>
+<tr><td>1</td><td>Skeleton generation, offline verification, <code>@NODE</code> advancement.</td><td><strong>shipped</strong> — twelve beats, streamed</td></tr>
+<tr><td>2</td><td>Private store, <code>spend</code>, verbatim recall on due.</td><td><strong>shipped</strong> — setups authored in the outline only</td></tr>
+<tr><td>3</td><td>Span retrieval by graph walk. Branch prefetch on Considered.</td><td>walk shipped; <strong>prefetch not built</strong></td></tr>
+</table>
+</div>
+
+<p>What remains unbuilt is branch prefetch — three speculative calls on commit, replayed from cache when the choice lands. Worth it only on the Considered tier, where the wait is 5–60s; at Brisk it is 3× usage to hide a second.</p>
+
+<h2><span class="n">11</span>Open</h2>
+
+<ul>
+<li><strong>Setups are authored, never sown at play.</strong> The narrator spends from the outline's stock and cannot open new ones mid-run. That makes the one invariant trivially checkable — a payoff must name a setup currently ready — instead of a contradiction test that would have to be faked. It also fixes the reservoir at generation, which is the more honest reading of "the outline is larger than any route."</li>
+<li><strong>Skeleton reuse.</strong> The same sixteen nodes with a different premise should produce an unrecognisable book. Worth testing early — if true, it is the thing no printed gamebook can do, and it changes what the artifact is.</li>
+<li><strong>Entity resolution.</strong> "The harbourmaster", "him", "the man at the desk". Phase 0 will surface how badly string matching performs. Likely fix: stable ids emitted alongside edges, which costs nothing extra.</li>
+<li><strong>The private store must never leave.</strong> If runs are ever shared or read back, the transcript export goes and the secrets stay.</li>
+<li><strong>The real risk is not inconsistency.</strong> It is a story where nothing costs anything — the model hedging, keeping every door open, declining to kill you. That is narrator instruction and resolve policy, and no architecture on this page fixes it.</li>
+</ul>
+
+<p class="end">Prose and logic first. The structures here formalise the idea; they did not produce it.</p>
+
+</div>
+</body>
+</html>

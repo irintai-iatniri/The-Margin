@@ -1,0 +1,1056 @@
+<title>Margin on The Margin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper: #F7F8F4;
+    --band: #E7EEE3;
+    --sheet: #FFFFFE;
+    --ink: #191D19;
+    --ink-2: #4E5850;
+    --ink-3: #77837A;
+    --rule: #C6D0C2;
+    --rule-soft: #DDE4DA;
+    --accent: #1F6FA8;
+    --debit: #9B2C2C;
+    --credit: #2E8B57;
+    --c1: #1F6FA8;
+    --c2: #C08019;
+    --c3: #7A5AA6;
+    --c4: #2E8B57;
+
+    --display: "Zilla Slab", "Bitter", Georgia, serif;
+    --body: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #151814;
+      --band: #1C211B;
+      --sheet: #10130F;
+      --ink: #E4E9DF;
+      --ink-2: #A9B4A7;
+      --ink-3: #7C877B;
+      --rule: #2F372E;
+      --rule-soft: #232A22;
+      --accent: #4892C4;
+      --debit: #E08A85;
+      --credit: #48A471;
+      --c1: #4892C4;
+      --c2: #B8842A;
+      --c3: #9179BE;
+      --c4: #48A471;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #151814;
+    --band: #1C211B;
+    --sheet: #10130F;
+    --ink: #E4E9DF;
+    --ink-2: #A9B4A7;
+    --ink-3: #7C877B;
+    --rule: #2F372E;
+    --rule-soft: #232A22;
+    --accent: #4892C4;
+    --debit: #E08A85;
+    --credit: #48A471;
+    --c1: #4892C4;
+    --c2: #B8842A;
+    --c3: #9179BE;
+    --c4: #48A471;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding-inline: 22px;
+    padding-block: 48px 80px;
+  }
+
+  .measure { max-width: 68ch; }
+
+  /* ---------- masthead ---------- */
+  .masthead { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 6vw, 3.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    margin: 10px 0 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.08rem;
+    color: var(--ink-2);
+    margin: 14px 0 0;
+    max-width: 62ch;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.08rem;
+    margin: 0 0 6px;
+  }
+  section { margin-top: 54px; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  .sec-head .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  p { margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 600; }
+  code, .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  code { font-size: 0.88em; color: var(--ink-2); }
+
+  /* ---------- control sheet ---------- */
+  .control {
+    background: var(--band);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 18px 20px 20px;
+  }
+  .control-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .control-head h3 { margin: 0; }
+  .control-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 14px 20px;
+    margin-top: 16px;
+  }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    line-height: 1.35;
+  }
+  .field input, .field select {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 3px 1px;
+    width: 100%;
+    border-radius: 0;
+  }
+  .field select { border-bottom-color: var(--rule); }
+  .field input:focus-visible, .field select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .reset {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-2);
+    padding: 5px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .reset:hover { border-color: var(--ink-2); color: var(--ink); }
+
+  /* ---------- tiles ---------- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 24px;
+  }
+  .tile { background: var(--paper); padding: 16px 18px; }
+  .tile .k {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .tile .v {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.85rem;
+    line-height: 1.15;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .s { font-size: 0.83rem; color: var(--ink-2); line-height: 1.4; }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 15px; }
+  caption {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 8px;
+  }
+  th, td { padding: 7px 12px; text-align: left; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--ink);
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(odd) { background: var(--band); }
+  td.n, th.n {
+    text-align: right;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  td.ln {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    width: 1%;
+    padding-right: 4px;
+  }
+  tr.total td {
+    border-top: 1px solid var(--ink);
+    font-weight: 600;
+    background: transparent;
+  }
+  tr.rule-above td { border-top: 1px solid var(--rule); }
+  .pos { color: var(--credit); }
+  .neg { color: var(--debit); }
+  .dim { color: var(--ink-3); }
+
+  /* ---------- charts ---------- */
+  figure { margin: 24px 0 0; }
+  figcaption {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .stack {
+    display: flex;
+    gap: 2px;
+    height: 46px;
+    width: 100%;
+  }
+  .stack > div {
+    position: relative;
+    min-width: 2px;
+    cursor: default;
+  }
+  .stack > div:first-child { border-radius: 4px 0 0 4px; }
+  .stack > div:last-child { border-radius: 0 4px 4px 0; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .legend .item { display: flex; align-items: baseline; gap: 7px; }
+  .legend .sw {
+    width: 10px; height: 10px; border-radius: 2px;
+    display: inline-block; flex: none; transform: translateY(1px);
+  }
+  .legend .lv {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 12px; }
+  .bar-row .bl {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    text-align: right;
+  }
+  .bar-track { display: flex; align-items: center; gap: 9px; }
+  .bar-fill {
+    height: 16px;
+    background: var(--accent);
+    border-radius: 0 4px 4px 0;
+    min-width: 2px;
+  }
+  .bar-val {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  /* ---------- misc blocks ---------- */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+  }
+  .card {
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 16px 18px;
+    background: var(--sheet);
+  }
+  .card.pick { border-color: var(--accent); border-width: 1px; box-shadow: inset 3px 0 0 var(--accent); }
+  .card .price {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    margin: 2px 0 8px;
+  }
+  .card p { font-size: 14.5px; color: var(--ink-2); margin-bottom: 10px; }
+  .card .verdict {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 9px;
+    display: block;
+  }
+
+  ul.notes { margin: 0; padding-left: 0; list-style: none; }
+  ul.notes li {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    display: grid;
+    grid-template-columns: 128px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  ul.notes li:first-child { border-top: 1px solid var(--rule-soft); }
+  ul.notes .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    line-height: 1.5;
+    padding-top: 2px;
+  }
+  ul.notes .txt { font-size: 15px; color: var(--ink-2); }
+  ul.notes .txt b { color: var(--ink); font-weight: 600; }
+
+  .callout {
+    background: var(--band);
+    border-left: 3px solid var(--accent);
+    padding: 16px 18px;
+    margin-top: 22px;
+    border-radius: 0 3px 3px 0;
+  }
+  .callout p { font-size: 15.5px; }
+
+  footer {
+    margin-top: 60px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 620px) {
+    body { font-size: 16px; }
+    .bar-row { grid-template-columns: 96px 1fr; }
+    ul.notes li { grid-template-columns: 1fr; gap: 4px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>The Margin</span><span>Unit economics &amp; pricing</span><span>13 September 2026</span>
+    </div>
+    <h1>Margin on The Margin</h1>
+    <p class="standfirst">What one AI-written gamebook costs to serve, what to charge for it, and what the
+      monthly sheet looks like at scale. Every figure below is computed from the control sheet — change an
+      assumption and the whole document re-reckons.</p>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2>Control sheet</h2>
+      <span class="tag">Editable</span>
+    </div>
+    <div class="control">
+      <div class="control-head">
+        <h3>Assumptions</h3>
+        <button class="reset" id="reset" type="button">Reset to defaults</button>
+      </div>
+      <p class="control-note" id="grounding">Turn context 2,800 tok and outline output ~3,000 tok are from the spec and README. The rest are estimates — set them.</p>
+      <div class="fields">
+        <div class="field">
+          <label for="turns">Turns per run</label>
+          <input id="turns" type="number" min="1" max="200" step="1" value="22">
+        </div>
+        <div class="field">
+          <label for="turnout">Prose tok / turn</label>
+          <input id="turnout" type="number" min="50" max="4096" step="50" value="700">
+        </div>
+        <div class="field">
+          <label for="rewind">Rewind overhead %</label>
+          <input id="rewind" type="number" min="0" max="200" step="5" value="15">
+        </div>
+        <div class="field">
+          <label for="mix">Narrator tier mix</label>
+          <select id="mix">
+            <option value="economical">Mostly Brisk</option>
+            <option value="balanced" selected>Balanced</option>
+            <option value="premium">Mostly Considered</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="runs">Books / sub / month</label>
+          <input id="runs" type="number" min="0.5" max="60" step="0.5" value="4">
+        </div>
+        <div class="field">
+          <label for="price">Price / month $</label>
+          <input id="price" type="number" min="1" max="99" step="1" value="12">
+        </div>
+        <div class="field">
+          <label for="subs">Subscribers</label>
+          <input id="subs" type="number" min="1" max="200000" step="10" value="1000">
+        </div>
+        <div class="field">
+          <label for="fixed">Fixed overhead $/mo</label>
+          <input id="fixed" type="number" min="0" max="100000" step="5" value="95">
+        </div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile">
+        <div class="k">Cost to serve one book</div>
+        <div class="v" id="t-book">$0.39</div>
+        <div class="s" id="t-book-s">outline + turns, blended</div>
+      </div>
+      <div class="tile">
+        <div class="k">Gross margin</div>
+        <div class="v pos" id="t-gm">81%</div>
+        <div class="s" id="t-gm-s">at $12 / 4 books</div>
+      </div>
+      <div class="tile">
+        <div class="k">Break-even subs</div>
+        <div class="v" id="t-be">12</div>
+        <div class="s" id="t-be-s">covers fixed overhead</div>
+      </div>
+      <div class="tile">
+        <div class="k">Monthly operating profit</div>
+        <div class="v" id="t-op">$9,652</div>
+        <div class="s" id="t-op-s">at 1,000 subscribers</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>What a book costs</h2>
+      <span class="tag">Cost of goods</span>
+    </div>
+    <div class="measure">
+      <p>A playthrough is two kinds of call. The <strong>outline</strong> fires once on Opus and is the single
+        most expensive request in the product — roughly 3,000 tokens of nested JSON out, which is also why a
+        truncated outline is the failure the README warns about. The <strong>turns</strong> are cheap and flat:
+        the engine assembles about 2,800 tokens of context per turn regardless of how long the run gets, so
+        cost scales with turn count and nothing else.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table id="cogs">
+        <caption>Cost build-up, one playthrough</caption>
+        <thead>
+          <tr>
+            <th>Call</th><th>Model</th><th class="n">Tok in</th><th class="n">Tok out</th>
+            <th class="n">Rate in/out per 1M</th><th class="n">Cost</th>
+          </tr>
+        </thead>
+        <tbody id="cogs-body"></tbody>
+      </table>
+    </div>
+
+    <figure>
+      <figcaption>Cost to serve one book, by narrator tier</figcaption>
+      <div class="bars" id="tierbars"></div>
+    </figure>
+
+    <div class="callout">
+      <p id="mixline">At the balanced mix a book costs about <strong>$0.39</strong> to serve. The outline is
+        <strong>21%</strong> of that and it is fixed — a player who quits after three turns still costs you
+        the full outline.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>What to charge</h2>
+      <span class="tag">Four structures</span>
+    </div>
+    <div class="measure">
+      <p>The danger in this product is a one-time purchase against an open-ended serving cost: a reader who
+        buys once for $15 and plays forty books has cost you more than they paid. Every structure below either
+        meters the books or caps them.</p>
+    </div>
+
+    <div class="cards" id="pricing"></div>
+
+    <div class="tablewrap">
+      <table id="structures">
+        <caption>Margin by structure, at current assumptions</caption>
+        <thead>
+          <tr><th>Structure</th><th class="n">Customer pays</th><th class="n">Books</th><th class="n">Inference</th><th class="n">Processing</th><th class="n">Gross</th><th class="n">Margin</th></tr>
+        </thead>
+        <tbody id="structures-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Monthly P&amp;L</h2>
+      <span class="tag" id="pl-tag">Subscription, 1,000 subs</span>
+    </div>
+
+    <div class="tablewrap">
+      <table id="pl">
+        <caption id="pl-caption">Statement of operations, one month</caption>
+        <thead>
+          <tr><th class="n">#</th><th>Line item</th><th class="n">Per subscriber</th><th class="n">Monthly</th><th class="n">Annualised</th></tr>
+        </thead>
+        <tbody id="pl-body"></tbody>
+      </table>
+    </div>
+
+    <figure>
+      <figcaption id="stack-caption">Where a $12 subscription goes</figcaption>
+      <div class="stack" id="stack"></div>
+      <div class="legend" id="stack-legend"></div>
+    </figure>
+
+    <div class="tablewrap">
+      <table id="scale">
+        <caption>The same sheet at three scales</caption>
+        <thead>
+          <tr><th>Subscribers</th><th class="n">Revenue</th><th class="n">Inference</th><th class="n">Processing</th><th class="n">Infra</th><th class="n">Fixed</th><th class="n">Operating profit</th><th class="n">Margin</th></tr>
+        </thead>
+        <tbody id="scale-body"></tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p id="scaleline">Margin barely moves with scale, because almost nothing here is fixed. That is the
+        tell of a business whose binding constraint is acquisition, not infrastructure.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>The number to quote</h2>
+      <span class="tag">Recommendation</span>
+    </div>
+    <div class="measure">
+      <p id="rec-lead">Retail at <strong>$1 a book</strong> and <strong>$12 a month</strong> for twenty.
+        A dollar is a legible price for a thing that takes an evening, it sits at a comfortable multiple of
+        what the book costs to serve, and the monthly figure lands where a paperback gamebook lands.</p>
+      <p>Lead with the free first book. It costs you one outline and a run of turns to find out whether a
+        stranger likes the product, which is cheaper than any ad you could buy — but gate it behind an email
+        or a device check, because unmetered it is a faucet.</p>
+      <p>Keep the bring-your-own-key build alive alongside the hosted tier. It has no cost of goods at all,
+        it absorbs exactly the heavy users who would otherwise erode the subscription, and it is the version
+        that already runs on this machine.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>What moves the number</h2>
+      <span class="tag">Levers &amp; exposure</span>
+    </div>
+    <ul class="notes">
+      <li>
+        <span class="lbl">Open relay</span>
+        <span class="txt"><b>The proxy has no auth.</b> <code>serve.py</code> binds 127.0.0.1, which is the
+          only thing protecting the key today. The moment it is hosted, <code>/api/sample</code> will accept
+          any request that reaches it and bill you for the answer. Auth and a per-account rate limit are a
+          cost control, not a feature.</span>
+      </li>
+      <li>
+        <span class="lbl">Outline retries</span>
+        <span class="txt">The outline is the priciest call and the one that fails. Every retry is a fresh
+          <span class="num" id="lev-outline">$0.08</span>. <b>Play anyway</b> is the cheap path — it also
+          happens to be the cheapest recovery on the sheet.</span>
+      </li>
+      <li>
+        <span class="lbl">Tier default</span>
+        <span class="txt">Brisk versus Considered is the largest single dial you own:
+          <span class="num" id="lev-tier">$0.24 against $0.40</span> a book. Defaulting new readers to Brisk
+          and offering Considered as the deliberate choice moves blended cost more than any prompt edit will.</span>
+      </li>
+      <li>
+        <span class="lbl">Prompt caching</span>
+        <span class="txt">The narrator rules are identical across every turn of a run. Cached, that prefix
+          reads at a tenth of its cost. Worth perhaps <span class="num" id="lev-cache">6%</span> of turn spend
+          here — real, but check <code>cache_read_input_tokens</code> is non-zero, since a short prefix may
+          fall under the minimum cacheable length and silently never cache.</span>
+      </li>
+      <li>
+        <span class="lbl">The ceiling holds</span>
+        <span class="txt"><code>MARGIN_MAX_TOKENS</code> at 4,096 is a hard cap on the worst case of any one
+          call. Raising it to rescue outlines raises your maximum exposure per request in the same motion.</span>
+      </li>
+      <li>
+        <span class="lbl">Heavy tail</span>
+        <span class="txt">At <span class="num" id="lev-cap">20</span> books a month a subscriber costs
+          <span class="num" id="lev-capcost">$7.84</span> and still clears. Without a cap there is no figure
+          to put here at all — which is the whole argument for the cap.</span>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    Rates: Haiku 4.5 $1/$5, Sonnet 5 $2/$10, Opus 5 $5/$25 per million tokens in/out. Processing at 2.9% + $0.30
+    per charge. Infrastructure modelled at $18/mo plus $0.02 per subscriber.<br>
+    Token figures for turn context and outline output are taken from the project spec and README; turns per run,
+    prose length per turn and rewind overhead are estimates and are the assumptions most worth replacing with
+    measurements from a real run.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var RATE = {
+    haiku:  { name: "Haiku 4.5",  label: "Brisk",      inp: 1, out: 5 },
+    sonnet: { name: "Sonnet 5",   label: "Considered", inp: 2, out: 10 },
+    opus:   { name: "Opus 5",     label: "Opus",       inp: 5, out: 25 }
+  };
+
+  var MIXES = {
+    economical: { haiku: 0.70, sonnet: 0.28, opus: 0.02 },
+    balanced:   { haiku: 0.35, sonnet: 0.55, opus: 0.10 },
+    premium:    { haiku: 0.10, sonnet: 0.60, opus: 0.30 }
+  };
+
+  var CONST = {
+    outlineIn: 1200,
+    outlineOut: 3000,
+    turnIn: 2800,
+    stripePct: 0.029,
+    stripeFixed: 0.30,
+    infraBase: 18,
+    infraPerSub: 0.02,
+    fairUseCap: 20
+  };
+
+  var DEFAULTS = { turns: 22, turnout: 700, rewind: 15, mix: "balanced", runs: 4, price: 12, subs: 1000, fixed: 95 };
+
+  var el = function (id) { return document.getElementById(id); };
+
+  var money = function (v, dp) {
+    var d = dp === undefined ? 2 : dp;
+    return "$" + v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+  };
+  var money0 = function (v) { return money(Math.round(v), 0); };
+  var pct = function (v, dp) { return (v * 100).toFixed(dp === undefined ? 0 : dp) + "%"; };
+  var tok = function (v) { return Math.round(v).toLocaleString("en-US"); };
+
+  function read() {
+    var a = {};
+    Object.keys(DEFAULTS).forEach(function (k) {
+      var node = el(k);
+      if (k === "mix") { a[k] = node.value; return; }
+      var v = parseFloat(node.value);
+      a[k] = isFinite(v) ? v : DEFAULTS[k];
+    });
+    a.turns = Math.max(1, a.turns);
+    a.subs = Math.max(1, Math.round(a.subs));
+    return a;
+  }
+
+  function turnCost(tier, a) {
+    var r = RATE[tier];
+    return (CONST.turnIn * r.inp + a.turnout * r.out) / 1e6;
+  }
+
+  function outlineCost() {
+    return (CONST.outlineIn * RATE.opus.inp + CONST.outlineOut * RATE.opus.out) / 1e6;
+  }
+
+  function runCost(tier, a) {
+    return outlineCost() + a.turns * turnCost(tier, a) * (1 + a.rewind / 100);
+  }
+
+  function compute(a) {
+    var m = MIXES[a.mix];
+    var blended = 0;
+    Object.keys(m).forEach(function (t) { blended += m[t] * runCost(t, a); });
+
+    var cogsPerSub = a.runs * blended;
+    var processingPerSub = a.price * CONST.stripePct + CONST.stripeFixed;
+    var infraPerSub = CONST.infraPerSub;
+    var contribution = a.price - cogsPerSub - processingPerSub - infraPerSub;
+
+    var revenue = a.price * a.subs;
+    var cogs = cogsPerSub * a.subs;
+    var processing = processingPerSub * a.subs;
+    var infra = CONST.infraBase + infraPerSub * a.subs;
+    var gross = revenue - cogs - processing - infra;
+    var operating = gross - a.fixed;
+
+    return {
+      a: a, mix: m, blended: blended, outline: outlineCost(),
+      cogsPerSub: cogsPerSub, processingPerSub: processingPerSub, infraPerSub: infraPerSub,
+      contribution: contribution,
+      revenue: revenue, cogs: cogs, processing: processing, infra: infra,
+      gross: gross, operating: operating,
+      grossMargin: revenue ? gross / revenue : 0,
+      breakEven: contribution > 0 ? Math.ceil((a.fixed + CONST.infraBase) / contribution) : null
+    };
+  }
+
+  function scenario(subs, a) {
+    var b = {};
+    Object.keys(a).forEach(function (k) { b[k] = a[k]; });
+    b.subs = subs;
+    return compute(b);
+  }
+
+  /* ---------- renderers ---------- */
+
+  function renderTiles(r) {
+    el("t-book").textContent = money(r.blended);
+    el("t-book-s").textContent = r.a.turns + " turns, " + MIXES_LABEL[r.a.mix].toLowerCase() + " mix";
+    el("t-gm").textContent = pct(r.grossMargin);
+    el("t-gm").className = "v " + (r.grossMargin >= 0 ? "pos" : "neg");
+    el("t-gm-s").textContent = "at " + money(r.a.price, 0) + " / " + r.a.runs + " books a month";
+    el("t-be").textContent = r.breakEven === null ? "—" : r.breakEven.toLocaleString("en-US");
+    el("t-be-s").textContent = r.breakEven === null
+      ? "no contribution at this price"
+      : "covers " + money0(r.a.fixed + CONST.infraBase) + " of fixed cost";
+    el("t-op").textContent = money0(r.operating);
+    el("t-op").className = "v " + (r.operating >= 0 ? "pos" : "neg");
+    el("t-op-s").textContent = "at " + r.a.subs.toLocaleString("en-US") + " subscribers";
+  }
+
+  var MIXES_LABEL = { economical: "Mostly Brisk", balanced: "Balanced", premium: "Mostly Considered" };
+
+  function renderCogs(r) {
+    var a = r.a;
+    var rows = [];
+    var oc = r.outline;
+    rows.push({
+      call: "Outline", model: "Opus 5", ti: CONST.outlineIn, to: CONST.outlineOut,
+      rate: "$5 / $25", cost: oc, note: "once per book"
+    });
+    ["haiku", "sonnet", "opus"].forEach(function (t) {
+      var per = turnCost(t, a);
+      var n = a.turns * (1 + a.rewind / 100);
+      rows.push({
+        call: "Turns × " + (Math.round(n * 10) / 10), model: RATE[t].name + " · " + RATE[t].label,
+        ti: CONST.turnIn, to: a.turnout,
+        rate: "$" + RATE[t].inp + " / $" + RATE[t].out, cost: per * n
+      });
+    });
+
+    var html = "";
+    rows.forEach(function (row) {
+      html += "<tr><td>" + row.call + "</td><td class=\"dim\">" + row.model + "</td>" +
+        "<td class=\"n\">" + tok(row.ti) + "</td><td class=\"n\">" + tok(row.to) + "</td>" +
+        "<td class=\"n dim\">" + row.rate + "</td><td class=\"n\">" + money(row.cost, 3) + "</td></tr>";
+    });
+    html += "<tr class=\"total\"><td colspan=\"5\">Blended cost of one book &mdash; " +
+      MIXES_LABEL[a.mix].toLowerCase() + " mix (" +
+      Math.round(r.mix.haiku * 100) + "/" + Math.round(r.mix.sonnet * 100) + "/" +
+      Math.round(r.mix.opus * 100) + ")</td><td class=\"n\">" + money(r.blended, 3) + "</td></tr>";
+    el("cogs-body").innerHTML = html;
+
+    var maxc = runCost("opus", a);
+    var bars = "";
+    ["haiku", "sonnet", "opus"].forEach(function (t) {
+      var c = runCost(t, a);
+      bars += "<div class=\"bar-row\"><div class=\"bl\">" + RATE[t].label + "</div>" +
+        "<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + (c / maxc * 100).toFixed(1) + "%\" " +
+        "title=\"" + RATE[t].name + " — " + money(c) + " a book\"></div>" +
+        "<span class=\"bar-val\">" + money(c) + "</span></div></div>";
+    });
+    el("tierbars").innerHTML = bars;
+
+    el("mixline").innerHTML = "At the " + MIXES_LABEL[a.mix].toLowerCase() +
+      " mix a book costs about <strong>" + money(r.blended) + "</strong> to serve. The outline is <strong>" +
+      pct(oc / r.blended) + "</strong> of that and it is fixed &mdash; a player who quits after three turns " +
+      "still costs you the full outline.";
+  }
+
+  function renderPricing(r) {
+    var a = r.a;
+    var packBooks = 15, packPrice = 15;
+    var oneTimeBooks = 25, oneTimePrice = 19;
+
+    var defs = [
+      {
+        name: "Free first book", price: "Free", books: 1, revenue: 0, pick: false,
+        body: "One outline and one run, on the house. Your cheapest acquisition channel, and the only honest way to show what the thing is.",
+        verdict: "Costs " + money(r.blended) + " a trial"
+      },
+      {
+        name: "Monthly", price: money(a.price, 0) + "/mo", books: CONST.fairUseCap, revenue: a.price, pick: true,
+        body: "Twenty books a month as fair use. The cap is what makes the margin knowable; the average reader will use " + a.runs + ".",
+        verdict: "Recommended"
+      },
+      {
+        name: "Credit pack", price: money(packPrice, 0), books: packBooks, revenue: packPrice, pick: false,
+        body: "Fifteen books, no expiry, no subscription. For the reader who wants the thing without the relationship.",
+        verdict: money(packPrice / packBooks) + " a book"
+      },
+      {
+        name: "Bring your own key", price: "$0", books: Infinity, revenue: 0, pick: false,
+        body: "The build that runs today. They pay the API directly, you carry no cost of goods and no exposure to heavy use.",
+        verdict: "No COGS, no ceiling"
+      }
+    ];
+
+    var cards = "";
+    defs.forEach(function (d) {
+      cards += "<div class=\"card" + (d.pick ? " pick" : "") + "\"><h3>" + d.name + "</h3>" +
+        "<div class=\"price\">" + d.price + "</div><p>" + d.body + "</p>" +
+        "<span class=\"verdict\">" + d.verdict + "</span></div>";
+    });
+    el("pricing").innerHTML = cards;
+
+    var structures = [
+      { n: "Monthly, average use", pay: a.price, books: a.runs, charges: 1 },
+      { n: "Monthly, at the cap", pay: a.price, books: CONST.fairUseCap, charges: 1 },
+      { n: "Credit pack, 15 books", pay: packPrice, books: packBooks, charges: 1 },
+      { n: "One-time, 25 books", pay: oneTimePrice, books: oneTimeBooks, charges: 1 },
+      { n: "Single book à la carte", pay: 1.49, books: 1, charges: 1 }
+    ];
+
+    var html = "";
+    structures.forEach(function (s) {
+      var inf = s.books * r.blended;
+      var proc = s.charges * (s.pay * CONST.stripePct + CONST.stripeFixed);
+      var gross = s.pay - inf - proc;
+      var margin = s.pay ? gross / s.pay : 0;
+      html += "<tr><td>" + s.n + "</td>" +
+        "<td class=\"n\">" + money(s.pay) + "</td>" +
+        "<td class=\"n\">" + s.books + "</td>" +
+        "<td class=\"n\">" + money(inf) + "</td>" +
+        "<td class=\"n\">" + money(proc) + "</td>" +
+        "<td class=\"n " + (gross >= 0 ? "pos" : "neg") + "\">" + money(gross) + "</td>" +
+        "<td class=\"n " + (margin >= 0 ? "pos" : "neg") + "\">" + pct(margin) + "</td></tr>";
+    });
+    el("structures-body").innerHTML = html;
+  }
+
+  function renderPL(r) {
+    var a = r.a;
+    el("pl-tag").textContent = "Subscription, " + a.subs.toLocaleString("en-US") + " subs";
+    el("pl-caption").textContent = "Statement of operations, one month at " + money(a.price, 0) +
+      " and " + a.runs + " books per subscriber";
+
+    var lines = [
+      { n: "Subscription revenue", per: a.price, tot: r.revenue, kind: "rev" },
+      { n: "Inference — outline calls", per: a.runs * r.outline, tot: a.runs * r.outline * a.subs, kind: "cost" },
+      { n: "Inference — narration turns", per: r.cogsPerSub - a.runs * r.outline, tot: (r.cogsPerSub - a.runs * r.outline) * a.subs, kind: "cost" },
+      { n: "Payment processing", per: r.processingPerSub, tot: r.processing, kind: "cost" },
+      { n: "Infrastructure", per: r.infraPerSub, tot: r.infra, kind: "cost" },
+      { n: "Gross profit", per: r.contribution, tot: r.gross, kind: "total" },
+      { n: "Fixed overhead", per: a.fixed / a.subs, tot: a.fixed, kind: "cost" },
+      { n: "Operating profit", per: r.operating / a.subs, tot: r.operating, kind: "total" }
+    ];
+
+    var html = "";
+    lines.forEach(function (l, i) {
+      var sign = l.kind === "cost" ? "(" : "";
+      var close = l.kind === "cost" ? ")" : "";
+      var cls = l.kind === "total" ? (l.tot >= 0 ? " pos" : " neg") : (l.kind === "cost" ? " neg" : "");
+      html += "<tr class=\"" + (l.kind === "total" ? "total" : "") + "\">" +
+        "<td class=\"ln\">" + String(i + 1).padStart(2, "0") + "</td>" +
+        "<td>" + l.n + "</td>" +
+        "<td class=\"n" + cls + "\">" + sign + money(Math.abs(l.per)) + close + "</td>" +
+        "<td class=\"n" + cls + "\">" + sign + money0(Math.abs(l.tot)) + close + "</td>" +
+        "<td class=\"n" + cls + "\">" + sign + money0(Math.abs(l.tot * 12)) + close + "</td></tr>";
+    });
+    el("pl-body").innerHTML = html;
+
+    /* stacked bar */
+    var segs = [
+      { k: "Inference", v: r.cogs, c: "var(--c1)" },
+      { k: "Processing", v: r.processing, c: "var(--c2)" },
+      { k: "Infra + overhead", v: r.infra + a.fixed, c: "var(--c3)" },
+      { k: "Operating profit", v: Math.max(0, r.operating), c: "var(--c4)" }
+    ];
+    var total = segs.reduce(function (s, x) { return s + x.v; }, 0) || 1;
+    el("stack-caption").textContent = "Where a " + money(a.price, 0) + " subscription goes";
+    var sh = "", lh = "";
+    segs.forEach(function (s) {
+      var share = s.v / total;
+      sh += "<div style=\"flex:" + share.toFixed(5) + ";background:" + s.c + "\" title=\"" + s.k + " — " +
+        money(share * a.price) + " of every " + money(a.price, 0) + " (" + pct(share) + ")\"></div>";
+      lh += "<span class=\"item\"><span class=\"sw\" style=\"background:" + s.c + "\"></span>" + s.k +
+        " <span class=\"lv\">" + money(share * a.price) + " · " + pct(share) + "</span></span>";
+    });
+    el("stack").innerHTML = sh;
+    el("stack-legend").innerHTML = lh;
+
+    /* scale table */
+    var tiers = [100, 1000, 5000];
+    if (tiers.indexOf(a.subs) === -1) { tiers.push(a.subs); tiers.sort(function (x, y) { return x - y; }); }
+    var sb = "";
+    tiers.forEach(function (n) {
+      var s = scenario(n, a);
+      var here = n === a.subs;
+      sb += "<tr" + (here ? " class=\"rule-above\"" : "") + "><td>" + n.toLocaleString("en-US") +
+        (here ? " <span class=\"dim\">← current</span>" : "") + "</td>" +
+        "<td class=\"n\">" + money0(s.revenue) + "</td>" +
+        "<td class=\"n neg\">(" + money0(s.cogs) + ")</td>" +
+        "<td class=\"n neg\">(" + money0(s.processing) + ")</td>" +
+        "<td class=\"n neg\">(" + money0(s.infra) + ")</td>" +
+        "<td class=\"n neg\">(" + money0(a.fixed) + ")</td>" +
+        "<td class=\"n " + (s.operating >= 0 ? "pos" : "neg") + "\">" + money0(s.operating) + "</td>" +
+        "<td class=\"n\">" + pct(s.revenue ? s.operating / s.revenue : 0) + "</td></tr>";
+    });
+    el("scale-body").innerHTML = sb;
+
+    var small = scenario(100, a), big = scenario(5000, a);
+    el("scaleline").innerHTML = "Operating margin moves from <strong>" +
+      pct(small.revenue ? small.operating / small.revenue : 0) + "</strong> at 100 subscribers to <strong>" +
+      pct(big.revenue ? big.operating / big.revenue : 0) + "</strong> at 5,000 &mdash; almost flat, because " +
+      "almost nothing here is fixed. Cost of goods rises with every book served. That is the shape of a " +
+      "business whose binding constraint is acquisition, not infrastructure.";
+  }
+
+  function renderLevers(r) {
+    var a = r.a;
+    el("lev-outline").textContent = money(r.outline);
+    el("lev-tier").textContent = money(runCost("haiku", a)) + " against " + money(runCost("sonnet", a));
+
+    var stableIn = 1200;
+    var turnsSonnet = turnCost("sonnet", a);
+    var saved = (stableIn * RATE.sonnet.inp / 1e6) * 0.9;
+    el("lev-cache").textContent = pct(saved / turnsSonnet, 0);
+
+    el("lev-cap").textContent = CONST.fairUseCap;
+    el("lev-capcost").textContent = money(CONST.fairUseCap * r.blended);
+  }
+
+  function renderRec(r) {
+    var a = r.a;
+    el("rec-lead").innerHTML = "Retail at <strong>$1 a book</strong> and <strong>" + money(a.price, 0) +
+      " a month</strong> for " + CONST.fairUseCap + ". A dollar is a legible price for a thing that takes an " +
+      "evening, it sits at <strong>" + (1 / r.blended).toFixed(1) + "×</strong> what the book costs to " +
+      "serve, and the monthly figure lands where a paperback gamebook lands.";
+  }
+
+  function render() {
+    var r = compute(read());
+    renderTiles(r);
+    renderCogs(r);
+    renderPricing(r);
+    renderPL(r);
+    renderLevers(r);
+    renderRec(r);
+  }
+
+  Object.keys(DEFAULTS).forEach(function (k) {
+    el(k).addEventListener("input", render);
+    el(k).addEventListener("change", render);
+  });
+
+  el("reset").addEventListener("click", function () {
+    Object.keys(DEFAULTS).forEach(function (k) { el(k).value = DEFAULTS[k]; });
+    render();
+  });
+
+  render();
+})();
+</script>
