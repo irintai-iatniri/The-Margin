@@ -123,7 +123,7 @@ async fn main() {
         max_tokens: env::var("MARGIN_MAX_TOKENS")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(4096),
+            .unwrap_or(8192),
         quick: model_env("MARGIN_QUICK", "claude-haiku-4-5-20251001"),
         considered: model_env("MARGIN_DEFAULT", "claude-sonnet-5"),
         complex: model_env("MARGIN_COMPLEX", "claude-opus-5"),
@@ -133,7 +133,14 @@ async fn main() {
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(7878);
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let host = env::var("MARGIN_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let octets: Vec<u8> = host.split('.').filter_map(|s| s.parse().ok()).collect();
+    let ip = if octets.len() == 4 { [octets[0], octets[1], octets[2], octets[3]] } else { [127, 0, 0, 1] };
+    if ip != [127, 0, 0, 1] {
+        println!("! Listening on {host} — anyone who can reach this machine can play,");
+        println!("  and every turn they take spends YOUR key. Keep it to your own network.\n");
+    }
+    let addr = SocketAddr::from((ip, port));
 
     println!("The Margin  ->  http://{addr}");
     println!("  brisk      {}", app.quick);

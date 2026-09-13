@@ -30,7 +30,7 @@ def check(name, ok, detail=""):
 
 # ----------------------------------------------------------------- outline
 def outline():
-    """Nine beats. n1 -> n2 -> n8(kept); n9 is the lost ending."""
+    """Nine beats, spine n1..n6, endings n8/n9 at depth 5. n7 is optional."""
     mid = lambda i, w, e: {"id": "n%d" % i, "want": w, "exit": e, "sow": [], "due": [], "terminal": None}
     nodes = [
         {"id": "n1", "want": "establish the debt and who holds it",
@@ -40,32 +40,31 @@ def outline():
          "due": [], "terminal": None},
         {"id": "n2", "want": "a trust breaks", "exit": "the ledger changes hands",
          "sow": [{"id": "s3", "claim": "The girl has seen the ledger before.", "subject": ["girl"]}],
-         "due": ["s1"], "terminal": None},
-        mid(3, "a route out is offered", "the barge is untied"),
-        mid(4, "the cost of the route is shown", "someone is left behind"),
-        mid(5, "an old obligation surfaces", "a name is written down"),
-        mid(6, "the collector closes in", "the lamp goes out"),
-        mid(7, "a last bargain", "the tarp is pulled back"),
+         "due": [], "terminal": None},
+        mid(3, "the cost of the route is shown", "someone is left behind"),
+        mid(4, "an old obligation surfaces", "a name is written down"),
+        mid(5, "the collector closes in", "the lamp goes out"),
+        mid(6, "a last bargain", "the tarp is pulled back"),
+        mid(7, "an unasked question, off the main line", "a door is left unopened"),
         {"id": "n8", "want": "the debt is settled", "exit": "the book closes on open water",
          "sow": [], "due": ["s2", "s3"], "terminal": "kept"},
         {"id": "n9", "want": "it is called in", "exit": "the book closes under the ice",
          "sow": [], "due": [], "terminal": "lost"},
     ]
+    nodes[2]["due"] = ["s1"]          # s1 pays off on n3
     edges = [
         {"from": "n1", "to": "n2", "gate": "the name is spoken"},
-        {"from": "n1", "to": "n3", "gate": "the name is withheld"},
-        {"from": "n2", "to": "n8", "gate": "the ledger is surrendered"},
-        {"from": "n2", "to": "n4", "gate": "the ledger is kept"},
-        {"from": "n3", "to": "n5", "gate": "the canal is followed north"},
-        {"from": "n3", "to": "n9", "gate": "the ice is trusted"},
-        {"from": "n4", "to": "n6", "gate": "the collector is answered"},
-        {"from": "n4", "to": "n9", "gate": "the collector is fled"},
-        {"from": "n5", "to": "n7", "gate": "the obligation is honoured"},
-        {"from": "n5", "to": "n9", "gate": "the obligation is denied"},
-        {"from": "n6", "to": "n8", "gate": "the lamp is relit"},
-        {"from": "n6", "to": "n9", "gate": "the dark is accepted"},
-        {"from": "n7", "to": "n8", "gate": "the bargain holds"},
-        {"from": "n7", "to": "n9", "gate": "the bargain breaks"},
+        {"from": "n1", "to": "n7", "gate": "the name is withheld"},
+        {"from": "n2", "to": "n3", "gate": "the ledger is surrendered"},
+        {"from": "n2", "to": "n7", "gate": "the ledger is kept"},
+        {"from": "n7", "to": "n3", "gate": "the question is finally asked"},
+        {"from": "n3", "to": "n4", "gate": "the obligation is honoured"},
+        {"from": "n3", "to": "n5", "gate": "the obligation is denied"},
+        {"from": "n4", "to": "n5", "gate": "the collector is answered"},
+        {"from": "n4", "to": "n6", "gate": "the collector is fled"},
+        {"from": "n5", "to": "n6", "gate": "the lamp is relit"},
+        {"from": "n6", "to": "n8", "gate": "the bargain holds"},
+        {"from": "n6", "to": "n9", "gate": "the bargain breaks"},
     ]
     return {"start": "n1", "nodes": nodes, "edges": edges}
 
@@ -165,23 +164,22 @@ def normal_script(run, blob, is_outline, turns):
                     {"beat": "the barge wedges in the ice", "place": "the frozen canal",
                      "resolve": 7, "gain": ["a boat hook"], "lose": [],
                      "edges": [["collector", "waits on", "the towpath"]], "invalidate": []},
-                    {"satisfied": False, "next": None}, {"spend": []})
-    if turns == 2:
-        return turn(PROSE, ["Hand over the ledger.", "Keep it and lie.", "Ask what he wants."],
-                    {"beat": "the collector is named", "place": "the towpath",
-                     "resolve": 6, "gain": [], "lose": [], "edges": [], "invalidate": []},
-                    {"satisfied": True, "next": "n2"}, {"spend": []})
-    if turns == 3:
-        return turn(PROSE, ["Untie the barge.", "Wait for the ice.", "Wake her."],
-                    {"beat": "the ledger changes hands", "place": "the towpath",
-                     "resolve": 5, "gain": [], "lose": ["a boat hook"], "edges": [], "invalidate": []},
-                    {"satisfied": True, "next": "n8"}, {"spend": ["s1"]})
-    # every turn past the scripted three, including everything after a replay,
-    # must still be a well-formed turn or the harness starves the page
+                    {"satisfied": False, "next": None, "drift": 0}, {"spend": []})
+    # one advance per turn along the spine, ending at n8 on the sixth
+    spine = {2: "n2", 3: "n3", 4: "n4", 5: "n5", 6: "n6", 7: "n8"}
+    if turns in spine:
+        nxt = spine[turns]
+        return turn(PROSE, ["Press on.", "Give ground.", "Look again at the ice."],
+                    {"beat": "step toward %s" % nxt, "place": "the towpath",
+                     "resolve": max(3, 8 - turns), "gain": [],
+                     "lose": (["a boat hook"] if turns == 3 else []),
+                     "edges": [], "invalidate": []},
+                    {"satisfied": True, "next": nxt, "drift": 0},
+                    {"spend": (["s1"] if turns == 4 else [])})
     return turn(PROSE, ["Hold the line.", "Give ground.", "Look again at the ice."],
                 {"beat": "the cold settles in", "place": "open water", "resolve": 5,
                  "gain": [], "lose": [], "edges": [], "invalidate": []},
-                {"satisfied": False, "next": None}, {"spend": []})
+                {"satisfied": False, "next": None, "drift": 0}, {"spend": []})
 
 
 # ----------------------------------------------------------------- scenarios
@@ -239,6 +237,7 @@ def scenario_play(browser):
     check("inventory tracked", "boat hook" in r.text("#carrying"), r.text("#carrying"))
     check("chronicle written", "wedges in the ice" in r.text("#beats"), r.text("#beats"))
     check("arc meter shown", r.visible("#arc") and r.visible("#arcHead"))
+    check("no drift on an on-rails run", "off the path" not in r.text("#arc"), r.text("#arc"))
     marks = r.text("#marks")
     check("resolve meter drawn", marks.count("\u25a0") == 7, marks)
 
@@ -284,7 +283,7 @@ def scenario_ending(browser):
     r = Run(browser, normal_script)
     r.begin()
     r.page.wait_for_selector("#choices .choice", timeout=15000)
-    for _ in range(2):
+    for _ in range(6):
         r.page.click("#choices .choice >> nth=0")
         r.page.wait_for_timeout(1200)
     r.page.wait_for_selector("#ending", state="visible", timeout=15000)
@@ -391,6 +390,57 @@ def scenario_failures(browser):
     r.close()
 
 
+def scenario_drift(browser):
+    print("\n[8] drift — the outline's lightcone")
+
+    def wanders(run, blob, is_outline, turns):
+        if is_outline:
+            return json.dumps(outline())
+        if turns == 1:
+            return turn(PROSE, ["Answer the lantern.", "Run for the treeline.", "Say the name."],
+                        {"beat": "the barge wedges in the ice", "place": "the frozen canal",
+                         "resolve": 7, "gain": [], "lose": [], "edges": [], "invalidate": []},
+                        {"satisfied": False, "next": None, "drift": 0}, {"spend": []})
+        # every turn after the first walks three degrees away: 3,6,9 -> detaches on the third
+        return turn(PROSE, ["Keep walking.", "Turn back.", "Sleep where you stand."],
+                    {"beat": "further from the canal", "place": "somewhere unmapped",
+                     "resolve": 6, "gain": [], "lose": [], "edges": [], "invalidate": []},
+                    {"satisfied": False, "next": None, "drift": 3}, {"spend": []})
+
+    r = Run(browser, wanders)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    check("starts on the outline", r.visible("#arc"))
+
+    r.page.click("#choices .choice >> nth=1")
+    r.page.wait_for_function("document.getElementById('beats').children.length===2", timeout=15000)
+    check("drift is shown once it starts", "off the path" in r.text("#arc"), r.text("#arc"))
+    check("still on the outline below the budget", r.visible("#arcHead"))
+
+    r.page.click("#choices .choice >> nth=0")
+    r.page.wait_for_function("document.getElementById('beats').children.length===3", timeout=15000)
+    r.page.click("#choices .choice >> nth=0")
+    r.page.wait_for_function("document.getElementById('beats').children.length===4", timeout=15000)
+
+    check("detaches past the budget", "no longer reaches you" in r.text("#playNotice"),
+          r.text("#playNotice"))
+    check("arc meter retires on detach", not r.visible("#arc"))
+    # the last request is the one that CAUSED the detach; take one more turn so
+    # the assertion looks at assembly built after the outline let go
+    r.page.click("#choices .choice >> nth=0")
+    r.page.wait_for_function("document.getElementById('beats').children.length===5", timeout=15000)
+    # only the newly built context turn matters -- earlier history legitimately
+    # still contains [BEAT] blocks from when the outline was still governing
+    ctx = r.seen[-1]["messages"][-1]["content"]
+    rules = r.seen[-1]["messages"][0]["content"]
+    check("assembly drops the beat block after detaching", "[BEAT]" not in ctx, ctx[:160])
+    check("history is not rewritten", any("[BEAT]" in m["content"] for m in r.seen[-1]["messages"]))
+    check("narrator now paces its own ending", '"ending"' in rules and "THE BEAT." not in rules)
+    check("play continues, not punished",
+          len(r.page.query_selector_all("#choices .choice")) == 3)
+    r.close()
+
+
 def scenario_persistence(browser):
     print("\n[7] saving and resuming")
     r = Run(browser, normal_script)
@@ -444,7 +494,7 @@ def main():
             sys.exit("no usable browser — run: python3 -m playwright install chromium")
         for fn in (scenario_premise, scenario_lore, scenario_play,
                    scenario_turnback, scenario_ending, scenario_failures,
-                   scenario_persistence):
+                   scenario_drift, scenario_persistence):
             try:
                 out = fn(browser)
                 if hasattr(out, "close"):

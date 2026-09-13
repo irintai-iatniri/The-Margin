@@ -489,6 +489,14 @@
           </select>
         </div>
         <div class="field">
+          <label for="lorepct">Runs with a lore book %</label>
+          <input id="lorepct" type="number" min="0" max="100" step="5" value="30">
+        </div>
+        <div class="field">
+          <label for="lorechars">Lore chars to outline</label>
+          <input id="lorechars" type="number" min="0" max="24000" step="1000" value="24000">
+        </div>
+        <div class="field">
           <label for="runs">Books / sub / month</label>
           <input id="runs" type="number" min="0.5" max="60" step="0.5" value="4">
         </div>
@@ -510,7 +518,7 @@
     <div class="tiles">
       <div class="tile">
         <div class="k">Cost to serve one book</div>
-        <div class="v" id="t-book">$0.39</div>
+        <div class="v" id="t-book">$0.41</div>
         <div class="s" id="t-book-s">outline + turns, blended</div>
       </div>
       <div class="tile">
@@ -525,7 +533,7 @@
       </div>
       <div class="tile">
         <div class="k">Monthly operating profit</div>
-        <div class="v" id="t-op">$9,652</div>
+        <div class="v" id="t-op">$9,589</div>
         <div class="s" id="t-op-s">at 1,000 subscribers</div>
       </div>
     </div>
@@ -542,6 +550,11 @@
         truncated outline is the failure the README warns about. The <strong>turns</strong> are cheap and flat:
         the engine assembles about 2,800 tokens of context per turn regardless of how long the run gets, so
         cost scales with turn count and nothing else.</p>
+      <p>A lore book changes both halves. The document goes to the outline <em>whole</em>, up to 24,000
+        characters marked canon, which is the largest single block of input the product ever sends. Then two
+        ~900-character passages ride along with every turn — flat by design, so a hundred-page document costs
+        no more per turn than a one-page one. Lines marked <span class="dim">†</span> apply only to runs with
+        a lore book loaded.</p>
     </div>
 
     <div class="tablewrap">
@@ -669,6 +682,16 @@
           happens to be the cheapest recovery on the sheet.</span>
       </li>
       <li>
+        <span class="lbl">The lore book</span>
+        <span class="txt"><b>The one input a customer controls that changes what you pay.</b> Up to 24,000
+          characters go to the outline whole as canon &mdash; about
+          <span class="num" id="lev-loretok">6,000</span> tokens of Opus input, or
+          <span class="num" id="lev-loreout">$0.03</span> on top of every outline. Retrieval during play is
+          the cheap half and deliberately flat: two ~900-character passages a turn whether the document is one
+          page or a hundred. All in, <span class="num" id="lev-lore">$0.05</span> a run. The 24,000-character
+          truncation is already acting as a cost control; that is worth knowing before anyone raises it.</span>
+      </li>
+      <li>
         <span class="lbl">Tier default</span>
         <span class="txt">Brisk versus Considered is the largest single dial you own:
           <span class="num" id="lev-tier">$0.24 against $0.40</span> a book. Defaulting new readers to Brisk
@@ -698,9 +721,10 @@
   <footer>
     Rates: Haiku 4.5 $1/$5, Sonnet 5 $2/$10, Opus 5 $5/$25 per million tokens in/out. Processing at 2.9% + $0.30
     per charge. Infrastructure modelled at $18/mo plus $0.02 per subscriber.<br>
-    Token figures for turn context and outline output are taken from the project spec and README; turns per run,
-    prose length per turn and rewind overhead are estimates and are the assumptions most worth replacing with
-    measurements from a real run.
+    Token figures for turn context, outline output, the 24,000-character lore cap and the two ~900-character
+    passages per turn are taken from the project spec and README, converted at four characters per token; turns
+    per run, prose length per turn, rewind overhead and lore attach rate are estimates and are the assumptions
+    most worth replacing with measurements from a real run.
   </footer>
 </div>
 
@@ -724,6 +748,9 @@
     outlineIn: 1200,
     outlineOut: 3000,
     turnIn: 2800,
+    charsPerTok: 4,
+    lorePassageChars: 1800,
+    loreCap: 24000,
     stripePct: 0.029,
     stripeFixed: 0.30,
     infraBase: 18,
@@ -731,7 +758,8 @@
     fairUseCap: 20
   };
 
-  var DEFAULTS = { turns: 22, turnout: 700, rewind: 15, mix: "balanced", runs: 4, price: 12, subs: 1000, fixed: 95 };
+  var DEFAULTS = { turns: 22, turnout: 700, rewind: 15, mix: "balanced", lorepct: 30, lorechars: 24000,
+                   runs: 4, price: 12, subs: 1000, fixed: 95 };
 
   var el = function (id) { return document.getElementById(id); };
 
@@ -753,26 +781,51 @@
     });
     a.turns = Math.max(1, a.turns);
     a.subs = Math.max(1, Math.round(a.subs));
+    a.lorechars = Math.min(Math.max(0, a.lorechars), CONST.loreCap);
+    a.lorepct = Math.min(Math.max(0, a.lorepct), 100);
     return a;
   }
 
-  function turnCost(tier, a) {
+  /* tokens the lore book adds: the whole document to the outline once,
+     then two ~900-char passages per turn however long the document is */
+  function loreOutlineTok(a) { return a.lorechars / CONST.charsPerTok; }
+  function loreTurnTok(a) { return a.lorechars > 0 ? CONST.lorePassageChars / CONST.charsPerTok : 0; }
+
+  function turnCost(tier, a, lore) {
     var r = RATE[tier];
-    return (CONST.turnIn * r.inp + a.turnout * r.out) / 1e6;
+    var inp = CONST.turnIn + (lore ? loreTurnTok(a) : 0);
+    return (inp * r.inp + a.turnout * r.out) / 1e6;
   }
 
-  function outlineCost() {
-    return (CONST.outlineIn * RATE.opus.inp + CONST.outlineOut * RATE.opus.out) / 1e6;
+  function outlineCost(a, lore) {
+    var inp = CONST.outlineIn + (lore ? loreOutlineTok(a) : 0);
+    return (inp * RATE.opus.inp + CONST.outlineOut * RATE.opus.out) / 1e6;
   }
 
-  function runCost(tier, a) {
-    return outlineCost() + a.turns * turnCost(tier, a) * (1 + a.rewind / 100);
+  function effTurns(a) { return a.turns * (1 + a.rewind / 100); }
+
+  function runCost(tier, a, lore) {
+    return outlineCost(a, lore) + effTurns(a) * turnCost(tier, a, lore);
+  }
+
+  /* per-tier cost weighted by how often a lore book is loaded */
+  function runCostAttach(tier, a) {
+    var p = a.lorepct / 100;
+    return (1 - p) * runCost(tier, a, false) + p * runCost(tier, a, true);
+  }
+
+  function blendTiers(a, fn) {
+    var m = MIXES[a.mix], sum = 0;
+    Object.keys(m).forEach(function (t) { sum += m[t] * fn(t); });
+    return sum;
   }
 
   function compute(a) {
     var m = MIXES[a.mix];
-    var blended = 0;
-    Object.keys(m).forEach(function (t) { blended += m[t] * runCost(t, a); });
+    var p = a.lorepct / 100;
+    var bare = blendTiers(a, function (t) { return runCost(t, a, false); });
+    var withLore = blendTiers(a, function (t) { return runCost(t, a, true); });
+    var blended = (1 - p) * bare + p * withLore;
 
     var cogsPerSub = a.runs * blended;
     var processingPerSub = a.price * CONST.stripePct + CONST.stripeFixed;
@@ -787,7 +840,11 @@
     var operating = gross - a.fixed;
 
     return {
-      a: a, mix: m, blended: blended, outline: outlineCost(),
+      a: a, mix: m, blended: blended, bare: bare, withLore: withLore,
+      loreDelta: withLore - bare,
+      outline: (1 - p) * outlineCost(a, false) + p * outlineCost(a, true),
+      outlineBare: outlineCost(a, false),
+      outlineLoreAdd: outlineCost(a, true) - outlineCost(a, false),
       cogsPerSub: cogsPerSub, processingPerSub: processingPerSub, infraPerSub: infraPerSub,
       contribution: contribution,
       revenue: revenue, cogs: cogs, processing: processing, infra: infra,
@@ -808,7 +865,8 @@
 
   function renderTiles(r) {
     el("t-book").textContent = money(r.blended);
-    el("t-book-s").textContent = r.a.turns + " turns, " + MIXES_LABEL[r.a.mix].toLowerCase() + " mix";
+    el("t-book-s").textContent = r.a.turns + " turns, " + MIXES_LABEL[r.a.mix].toLowerCase() +
+      " mix, " + r.a.lorepct + "% with lore";
     el("t-gm").textContent = pct(r.grossMargin);
     el("t-gm").className = "v " + (r.grossMargin >= 0 ? "pos" : "neg");
     el("t-gm-s").textContent = "at " + money(r.a.price, 0) + " / " + r.a.runs + " books a month";
@@ -825,49 +883,80 @@
 
   function renderCogs(r) {
     var a = r.a;
-    var rows = [];
-    var oc = r.outline;
-    rows.push({
-      call: "Outline", model: "Opus 5", ti: CONST.outlineIn, to: CONST.outlineOut,
-      rate: "$5 / $25", cost: oc, note: "once per book"
-    });
+    var n = effTurns(a);
+    var hasLore = a.lorechars > 0;
+    var blendedTurn = function (lore) { return blendTiers(a, function (t) { return turnCost(t, a, lore); }); };
+
+    var rows = [
+      { call: "Outline — premise, rules, instructions", model: "Opus 5", ti: CONST.outlineIn,
+        to: CONST.outlineOut, rate: "$5 / $25", cost: r.outlineBare }
+    ];
+    if (hasLore) {
+      rows.push({
+        call: "Outline — lore book as canon", model: "Opus 5", ti: loreOutlineTok(a), to: 0,
+        rate: "$5 / $25", cost: r.outlineLoreAdd, lore: true
+      });
+    }
     ["haiku", "sonnet", "opus"].forEach(function (t) {
-      var per = turnCost(t, a);
-      var n = a.turns * (1 + a.rewind / 100);
       rows.push({
         call: "Turns × " + (Math.round(n * 10) / 10), model: RATE[t].name + " · " + RATE[t].label,
-        ti: CONST.turnIn, to: a.turnout,
-        rate: "$" + RATE[t].inp + " / $" + RATE[t].out, cost: per * n
+        ti: CONST.turnIn, to: a.turnout, rate: "$" + RATE[t].inp + " / $" + RATE[t].out,
+        cost: turnCost(t, a, false) * n
       });
     });
+    if (hasLore) {
+      rows.push({
+        call: "Lore retrieval — 2 passages × " + (Math.round(n * 10) / 10) + " turns",
+        model: "blended tier", ti: loreTurnTok(a), to: 0, rate: "per turn",
+        cost: (blendedTurn(true) - blendedTurn(false)) * n, lore: true
+      });
+    }
 
     var html = "";
     rows.forEach(function (row) {
-      html += "<tr><td>" + row.call + "</td><td class=\"dim\">" + row.model + "</td>" +
-        "<td class=\"n\">" + tok(row.ti) + "</td><td class=\"n\">" + tok(row.to) + "</td>" +
+      html += "<tr><td>" + row.call + (row.lore ? " <span class=\"dim\">†</span>" : "") + "</td>" +
+        "<td class=\"dim\">" + row.model + "</td>" +
+        "<td class=\"n\">" + tok(row.ti) + "</td>" +
+        "<td class=\"n\">" + (row.to ? tok(row.to) : "<span class=\"dim\">—</span>") + "</td>" +
         "<td class=\"n dim\">" + row.rate + "</td><td class=\"n\">" + money(row.cost, 3) + "</td></tr>";
     });
-    html += "<tr class=\"total\"><td colspan=\"5\">Blended cost of one book &mdash; " +
-      MIXES_LABEL[a.mix].toLowerCase() + " mix (" +
+
+    var mixTag = MIXES_LABEL[a.mix].toLowerCase() + " mix (" +
       Math.round(r.mix.haiku * 100) + "/" + Math.round(r.mix.sonnet * 100) + "/" +
-      Math.round(r.mix.opus * 100) + ")</td><td class=\"n\">" + money(r.blended, 3) + "</td></tr>";
+      Math.round(r.mix.opus * 100) + ")";
+    if (hasLore) {
+      html += "<tr class=\"rule-above\"><td colspan=\"5\">One book, no lore book &mdash; " + mixTag +
+        "</td><td class=\"n\">" + money(r.bare, 3) + "</td></tr>";
+      html += "<tr><td colspan=\"5\">One book, lore book loaded <span class=\"dim\">†</span></td>" +
+        "<td class=\"n\">" + money(r.withLore, 3) + "</td></tr>";
+      html += "<tr class=\"total\"><td colspan=\"5\">Blended at " + a.lorepct +
+        "% lore attach</td><td class=\"n\">" + money(r.blended, 3) + "</td></tr>";
+    } else {
+      html += "<tr class=\"total\"><td colspan=\"5\">Blended cost of one book &mdash; " + mixTag +
+        "</td><td class=\"n\">" + money(r.blended, 3) + "</td></tr>";
+    }
     el("cogs-body").innerHTML = html;
 
-    var maxc = runCost("opus", a);
+    var maxc = runCostAttach("opus", a);
     var bars = "";
     ["haiku", "sonnet", "opus"].forEach(function (t) {
-      var c = runCost(t, a);
+      var c = runCostAttach(t, a);
       bars += "<div class=\"bar-row\"><div class=\"bl\">" + RATE[t].label + "</div>" +
         "<div class=\"bar-track\"><div class=\"bar-fill\" style=\"width:" + (c / maxc * 100).toFixed(1) + "%\" " +
-        "title=\"" + RATE[t].name + " — " + money(c) + " a book\"></div>" +
+        "title=\"" + RATE[t].name + " — " + money(c) + " a book at " + a.lorepct + "% lore attach\"></div>" +
         "<span class=\"bar-val\">" + money(c) + "</span></div></div>";
     });
     el("tierbars").innerHTML = bars;
 
-    el("mixline").innerHTML = "At the " + MIXES_LABEL[a.mix].toLowerCase() +
-      " mix a book costs about <strong>" + money(r.blended) + "</strong> to serve. The outline is <strong>" +
-      pct(oc / r.blended) + "</strong> of that and it is fixed &mdash; a player who quits after three turns " +
-      "still costs you the full outline.";
+    var line = "At the " + MIXES_LABEL[a.mix].toLowerCase() + " mix a book costs about <strong>" +
+      money(r.blended) + "</strong> to serve. The outline is <strong>" + pct(r.outline / r.blended) +
+      "</strong> of that and it is fixed — a player who quits after three turns still costs you the " +
+      "full outline.";
+    if (hasLore) {
+      line += " A lore book adds <strong>" + money(r.loreDelta) + "</strong> to the run that uses it, " +
+        pct(r.outlineLoreAdd / r.loreDelta) + " of it on the outline call alone.";
+    }
+    el("mixline").innerHTML = line;
   }
 
   function renderPricing(r) {
@@ -1012,12 +1101,16 @@
   function renderLevers(r) {
     var a = r.a;
     el("lev-outline").textContent = money(r.outline);
-    el("lev-tier").textContent = money(runCost("haiku", a)) + " against " + money(runCost("sonnet", a));
+    el("lev-tier").textContent = money(runCostAttach("haiku", a)) + " against " + money(runCostAttach("sonnet", a));
 
     var stableIn = 1200;
-    var turnsSonnet = turnCost("sonnet", a);
+    var turnsSonnet = turnCost("sonnet", a, false);
     var saved = (stableIn * RATE.sonnet.inp / 1e6) * 0.9;
     el("lev-cache").textContent = pct(saved / turnsSonnet, 0);
+
+    el("lev-lore").textContent = money(r.loreDelta);
+    el("lev-loreout").textContent = money(r.outlineLoreAdd);
+    el("lev-loretok").textContent = tok(loreOutlineTok(a));
 
     el("lev-cap").textContent = CONST.fairUseCap;
     el("lev-capcost").textContent = money(CONST.fairUseCap * r.blended);

@@ -5,3 +5,6 @@ __pycache__/
 env
 *.key
 the-margin*.txt
+.build-state.json
+.index.html.prev
+.the-margin-v2.html.prev

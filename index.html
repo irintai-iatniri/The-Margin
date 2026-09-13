@@ -3,10 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* First thing in the document, deliberately: written in the oldest syntax that
+   works everywhere, so it survives to report on anything that does not. */
+(function(){
+  var sent = 0;
+  function report(o){
+    if(sent > 4) return;
+    sent++;
+    try{
+      o.ua = navigator.userAgent;
+      var x = new XMLHttpRequest();
+      x.open("POST", "/_log", true);
+      x.setRequestHeader("Content-Type", "application/json");
+      x.send(JSON.stringify(o));
+    }catch(e){}
+    try{
+      var d = document.getElementById("bootfail");
+      if(d){
+        d.style.display = "block";
+        d.textContent = "This page failed to start: " + (o.message || o.kind) +
+                        (o.line ? " (line " + o.line + ")" : "") +
+                        "  \u2014 the details have been sent to the server terminal.";
+      }
+    }catch(e){}
+  }
+  window.onerror = function(msg, src, line, col, err){
+    report({kind:"onerror", message:String(msg), source:String(src||""), line:line, col:col,
+            stack: (err && err.stack) ? String(err.stack).slice(0,400) : ""});
+    return false;
+  };
+  window.addEventListener("unhandledrejection", function(e){
+    report({kind:"unhandledrejection", message:String((e.reason && e.reason.message) || e.reason)});
+  });
+  window.__marginReport = report;
+  window.addEventListener("load", function(){
+    setTimeout(function(){
+      if(!window.__marginBooted) report({kind:"never-booted", note:"load fired but the main script never ran to completion"});
+    }, 1500);
+  });
+})();
+</script>
 <title>The Margin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;1,6..96,400&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap"></noscript>
 <style>
 :root{
   --paper:#E4E6DF; --paper-deep:#D9DCD2; --ink:#23272A; --ink-soft:#5C6367;
@@ -58,6 +101,10 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
   padding:7px 0 7px 12px;margin-left:-14px;color:var(--ink);font:inherit;font-size:16px;cursor:pointer}
 .seed:hover{border-left-color:var(--blood);color:var(--blood)}
 .seed em{color:var(--ink-soft);font-size:14.5px}
+.lengths{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:26px;font-size:15px}
+.lengths label{font-size:12.5px;font-weight:600;font-style:italic;color:var(--ink-soft)}
+.lengths select{font-size:15px}
+.lenhint{font-size:12.5px;font-style:italic;color:var(--ink-soft);opacity:.85}
 .tones{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:32px;font-size:15px}
 .tones label{cursor:pointer;display:flex;gap:7px;align-items:baseline}
 .tones input{accent-color:var(--blood)}
@@ -117,6 +164,8 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
 .empty{font-style:italic;opacity:.7}
 .arc{letter-spacing:.16em;font-size:13px;color:var(--brass);margin:0 0 22px;word-break:break-all}
 .arc .unlit{color:var(--rule)}
+.drift{margin-top:7px;letter-spacing:.16em;font-size:13px;color:var(--blood)}
+.drift em{letter-spacing:0;font-size:12px;color:var(--ink-soft);margin-left:4px}
 .beats{margin:0;padding:0;list-style:none;max-height:40vh;overflow-y:auto}
 .beats li{padding:7px 0 7px 12px;border-left:1px solid var(--rule);margin-bottom:2px}
 .beats li.fresh{border-left-color:var(--brass);color:var(--ink)}
@@ -151,6 +200,9 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
 </style>
 </head>
 <body>
+<div id="bootfail" style="display:none;font:15px/1.5 Georgia,serif;background:#7A2E36;
+     color:#fff;padding:14px 18px;margin:0 0 12px">This page failed to start.</div>
+
 <div class="wrap">
 
   <header class="masthead">
@@ -161,6 +213,13 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
     <div class="mast-tools">
       <label id="paceWrap" class="hidden">Pace
         <select id="pace"><option value="quick" selected>Brisk</option><option value="default">Considered</option></select>
+      </label>
+      <label id="sceneWrap" class="hidden">Scenes
+        <select id="scene">
+          <option value="terse">Terse</option>
+          <option value="standard" selected>Standard</option>
+          <option value="full">Full</option>
+        </select>
       </label>
       <button id="turnbackBtn" class="btn-quiet hidden" type="button">Turn back</button>
       <button id="abandon" class="btn-quiet hidden" type="button">Abandon run</button>
@@ -176,6 +235,16 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
              placeholder="what?" maxlength="90" aria-label="What it concerns">.
     </p>
     <div class="seeds"><h2>Or take one of these</h2><div id="seedList"></div></div>
+    <div class="lengths">
+      <label for="book">Length</label>
+      <select id="book">
+        <option value="short">Short — 8 beats</option>
+        <option value="standard" selected>Standard — 12 beats</option>
+        <option value="long">Long — 18 beats</option>
+      </select>
+      <span class="lenhint">set before the outline is plotted; scene length is changeable while you read</span>
+    </div>
+
     <div class="tones" role="radiogroup" aria-label="Tone">
       <label><input type="radio" name="tone" value="grim" checked><span>Grim<small>consequences stick</small></span></label>
       <label><input type="radio" name="tone" value="wry"><span>Wry<small>the world is absurd</small></span></label>
@@ -225,6 +294,7 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
           <button id="replay" class="btn hidden" type="button">Walk it again</button>
           <button id="endTurnback" class="btn-quiet" type="button">Turn back</button>
           <button id="saveTranscript" class="btn-quiet hidden" type="button">Save the transcript</button>
+          <button id="saveReview" class="btn-quiet hidden" type="button">Save a reader's copy</button>
           <button id="again" class="btn-quiet" type="button">A different story</button>
         </div>
       </div>
@@ -295,6 +365,24 @@ var SEEDS = [
   {who:"a cartographer on a ship that keeps finding the same uncharted coast", drive:"seek",
    stake:"the island that is on no map", note:"the crew has stopped writing it in the log"}
 ];
+var SCENES = {
+  terse: { label:"Terse",
+    words:"90 to 130 words",
+    density:"One image, one movement, one pressure, and out. At most one new named thing. Nothing decorative — if a sentence is not carrying weight, cut it." },
+  standard: { label:"Standard",
+    words:"150 to 210 words",
+    density:"At most one new named thing. There is room for one image that is not strictly necessary; use it on something concrete." },
+  full: { label:"Full",
+    words:"240 to 340 words",
+    density:"Two new named things are allowed if the scene earns them. There is room to slow down: what the place smells like, what someone does with their hands while they lie, a memory that arrives uninvited, the specific wrong detail that tells the reader where they are. Length is permission, not a quota — do not pad, and do not summarise to fill it. If the scene only has 200 words in it, write 200." }
+};
+
+var BOOKS = {
+  short:    { label:"Short",    beats:8,  setups:6,  note:"a novella — the drive settles quickly" },
+  standard: { label:"Standard", beats:12, setups:8,  note:"" },
+  long:     { label:"Long",     beats:18, setups:12, note:"a novel — room to wander, and more planted than any route can pay off" }
+};
+
 var TONE_NOTE = {
   grim:"Grim: consequences accumulate and are not undone. Mercy is possible but costly.",
   wry:"Wry: the world is bureaucratic, petty and absurd, and takes itself seriously. Danger is real; the framing is dry.",
@@ -303,9 +391,16 @@ var TONE_NOTE = {
 
 var S = null, sampleFn = null, downloadsNs = null, ctl = null, busy = false;
 var SAVE_KEY = "margin:run:v2";
+var DRIFT_BUDGET = 8;
 
 /* ============================ state ============================ */
 function drive(){ return DRIVES[(S && S.drive) || "lose"] || DRIVES.lose; }
+function scene(){
+  var sel = $("scene");
+  var k = (sel && sel.value) || (S && S.scene) || "standard";
+  if(S) S.scene = k;
+  return SCENES[k] || SCENES.standard;
+}
 
 function blankState(who, stake, tone, dr){
   return {
@@ -314,7 +409,7 @@ function blankState(who, stake, tone, dr){
     beats:[], transcript:[], history:[],
     skeleton:null, node:null, visited:[], nodeTurns:0,
     secrets:{}, edges:[], edgeSeq:0,
-    lore:null,
+    lore:null, drift:0, detached:false, scene:"standard",
     snaps:[], lastChoices:[],
     ended:null
   };
@@ -378,8 +473,9 @@ function retrieveLore(action){
   return scored.slice(0, 2).map(function(x){ return x.text; });
 }
 
-function skeletonPrompt(who, stake, tone, dr, lore){
+function skeletonPrompt(who, stake, tone, dr, lore, book){
   var D = DRIVES[dr] || DRIVES.lose;
+  var B = BOOKS[book] || BOOKS.standard;
   var L = lore ? lore.text.slice(0, 24000) : null;
   var head = L ? [
 "You are outlining inside a world that already exists. Its source document follows. Everything in it is CANON: true, fixed, and yours to build on but never to contradict. Where it is silent you may invent freely, in its register. Where it names people, places, factions or rules, use those rather than inventions of your own.",
@@ -404,13 +500,16 @@ L,
 "It branches, so the beat sheet is a graph. A beat says what must HAPPEN there, never who or how or in what room: 'a trust breaks' is a beat, 'the miller informs on her in the granary' is a scene, and scenes get written later.",
 "",
 "STRUCTURE",
-"- 12 beats. One opening. Three endings, at least one where the stake is kept and one where it is lost.",
+"- " + B.beats + " beats" + (B.note ? " — " + B.note : "") + ". One opening. Three endings, at least one where the stake is kept and one where it is lost.",
 "- Two beats that every route runs through — the act breaks.",
 "- Three optional beats: reachable, never required.",
-"- Every non-ending beat branches at least two ways. Every beat is reachable from the opening. Every ending is reachable.",
+"- Every non-ending beat branches at least two ways. Every beat is reachable from the opening. Every ending is reachable. An ending has no branches out; every other beat must have at least one, including the last one before an ending.",
+"- IDS ARE EXACTLY n1, n2, n3 ... in order, and nothing else. Never append a word or a label to an id: \"n10-ending-lost\" is not an id, it is a description, and an edge pointing at \"n10\" will then point at nothing. Whatever a beat is for goes in \"want\", never in its id. Every \"from\" and \"to\" must match a node id character for character.",
+"- AN ENDING IS WHERE THE DRIVE IS SETTLED, not where something is learned. Its exit describes the stake decisively won, lost, paid or refused — the last page. A beat where a truth comes out, a letter is found, a motive is understood or a secret surfaces is NEVER an ending: that is the middle of the book, the moment the reader finally has something to do with what they know. Wire those as ordinary beats with branches out of them.",
+"- Endings may sit close to the opening. A reader who does something reckless on the second beat can die for it, and that is a real page. Short routes to an ending are welcome — they must simply be decisive, not informational. Early endings are failures, and sudden ones.",
 "- \"exit\" is the event that moves the story on, stated as something that visibly happens. 'She is holding the ledger' works. 'She understands the cost' does not — nothing on the page shows it.",
 "",
-"SETUPS AND PAYOFFS: 8 of them. A setup is a fact about the world the reader has not been given yet — the thing a re-read rewards. Plant each on a beat where it could first be implied, and mark the later beat where it could pay off. Plant more than any single route can pay off, at least three on optional beats, so a reader who takes one path leaves things behind unexplained. Every setup must be true of the world; none is a lie to the reader.",
+"SETUPS AND PAYOFFS: " + B.setups + " of them. A setup is a fact about the world the reader has not been given yet — the thing a re-read rewards. Plant each on a beat where it could first be implied, and mark the later beat where it could pay off. Plant more than any single route can pay off, at least three on optional beats, so a reader who takes one path leaves things behind unexplained. Every setup must be true of the world; none is a lie to the reader.",
 "",
 "Be terse. Every \"want\", \"exit\", \"gate\" and \"claim\" is one short sentence — this is a working outline, not a pitch.",
 "",
@@ -441,8 +540,16 @@ function verifySkeleton(sk){
     seen[id] = true;
     (out[id] || []).forEach(function(e){ stack.push(e.to); });
   }
+  // An ending may sit two beats from the opening — a reckless reader can die
+  // early and that is a real page. What an ending may NOT be is a discovery.
+  // A beat where a truth surfaces is the middle of the book; wiring it as a
+  // terminal is what makes a story stop at a reveal.
+  var DISCOVERY = /\b(learn|learns|learned|discover|discovers|discovered|reveal|reveals|revealed|realis|realiz|find out|finds out|found out|uncover|uncovers|uncovered|the truth|understand|understands|understood|sees that|is revealed)\b/i;
+
   var kept = false, lost = false;
   sk.nodes.forEach(function(n){
+    if(n.terminal && seen[n.id] && DISCOVERY.test(String(n.exit || "") + " " + String(n.want || "")))
+      problems.push("ending " + n.id + " is a discovery, not a conclusion: " + n.exit);
     if(!seen[n.id]) problems.push("unreachable: " + n.id);
     if(n.terminal === "kept" && seen[n.id]) kept = true;
     if(n.terminal === "lost" && seen[n.id]) lost = true;
@@ -489,13 +596,13 @@ function looseJSON(raw){
 
 var forgeCtl = null;
 
-function forgeSkeleton(who, stake, tone, dr, attempt){
+function forgeSkeleton(who, stake, tone, dr, book, attempt){
   attempt = attempt || 1;
   var step = forgeStep(attempt === 1 ? "Deciding the shape" : "Reworking the shape", false);
   forgeCtl = new AbortController();
   var seen = 0;
 
-  return sampleFn(skeletonPrompt(who, stake, tone, dr, pendingLore), {
+  return sampleFn(skeletonPrompt(who, stake, tone, dr, pendingLore, book), {
     modelTier: "default",
     cache: {gcTime: 600000},
     signal: forgeCtl.signal,
@@ -506,7 +613,7 @@ function forgeSkeleton(who, stake, tone, dr, attempt){
   }).then(function(res){
     var sk = looseJSON(res.text);
     if(!sk || !Array.isArray(sk.nodes)){
-      if(attempt < 2){ step.textContent = "Came back malformed — trying once more"; return forgeSkeleton(who, stake, tone, dr, 2); }
+      if(attempt < 2){ step.textContent = "Came back malformed — trying once more"; return forgeSkeleton(who, stake, tone, dr, book, 2); }
       throw {code:"invalid_json", message:"The outline did not come back as usable JSON."};
     }
     step.className = "step done";
@@ -515,7 +622,7 @@ function forgeSkeleton(who, stake, tone, dr, attempt){
     var problems = verifySkeleton(sk);
     if(problems.length && attempt < 2){
       v.textContent = "Shape rejected — " + problems[0];
-      return forgeSkeleton(who, stake, tone, dr, 2);
+      return forgeSkeleton(who, stake, tone, dr, book, 2);
     }
     v.className = "step done";
     v.textContent = problems.length ? "Accepted with " + problems.length + " rough edge(s)" : "Every ending reachable";
@@ -524,7 +631,7 @@ function forgeSkeleton(who, stake, tone, dr, attempt){
 }
 
 /* ============================ narrator ============================ */
-function hasArc(){ return !!(S && S.skeleton); }
+function hasArc(){ return !!(S && S.skeleton && !S.detached); }
 
 function rulesTurn(){
   var r = [
@@ -535,11 +642,11 @@ function rulesTurn(){
 "TONE — " + (TONE_NOTE[S.tone] || TONE_NOTE.grim),
 "",
 "HOW TO WRITE A TURN",
-"- Second person, present tense. 110 to 180 words. No headings, no titles, no bold.",
+"- Second person, present tense. " + scene().words + ". No headings, no titles, no bold.",
 "- Begin from the consequence of what the reader just did. Never narrate a decision they have not made.",
 "- End at a live decision point, mid-pressure. Do not summarise, do not moralise, do not ask 'what do you do?'.",
 "- Honour the STATE, the CHRONICLE and the RECORD you are given. Contradicting them is the one unforgivable error.",
-"- Introduce at most one new named thing per turn.",
+"- " + scene().density,
 "- The reader may type an action of their own. Let it work, fail, or backfire on its merits. Never refuse it as out of bounds.",
 ""];
 
@@ -553,7 +660,11 @@ function rulesTurn(){
     r.push(
 "THE BEAT. You are given the outline's current beat: what it is for and the event that moves the story on. Most turns do not move it — the reader is inside the beat, and the scene is pressure and texture. Set \"satisfied\" true only when that event has actually happened, however the reader got there. When it is true, choose \"next\" from the branches offered; nothing else is legal.",
 "",
+"DRIFT. Report, as a whole number 0 to 3, how far THIS turn has carried the story from the beat you are on and the branches out of it. 0: squarely inside it. 1: tangential, but those branches could still plausibly happen. 2: the branches are becoming hard to reach from here. 3: the story is somewhere the outline never contemplated. Judge only this turn, honestly, and do not soften it — the reader is allowed to leave, and something true should happen when they do. Most turns are 0.",
+"",
 "SETUPS. You may be given facts about the world that are ready to pay off. They are true and the reader has never been given them. Pay one off only when the scene genuinely wants it — a reveal that arrives because it was scheduled reads as machinery. When you pay one off, the prose must actually carry it, in the terms it was written. Do not substitute a different explanation. Most turns pay off nothing.",
+"",
+"A PAYOFF IS NOT A CONCLUSION. Learning the truth is the middle of a story, not the end of one — it is the moment the reader finally has something to do. A scene that reveals something must still end on a decision, must still offer three choices, and must NOT set satisfied unless this beat's own exit has separately happened. Never write a closing line, never write toward a curtain, unless the beat you are on is marked ENDING.",
 "");
   } else {
     r.push(
@@ -564,7 +675,11 @@ function rulesTurn(){
   r.push(
 "CHOICES: exactly three, each a different KIND of act. Roughly: one that engages directly, one that costs something or evades, one that is lateral — look closer, refuse, ask, wait, lie. Under 14 words each, concrete, no outcome revealed.",
 "",
-"RESOLVE is a 0-10 meter. Subtract for wounds, exhaustion, dread, loss. Most turns change it by 0 or -1.",
+"RESOLVE, 0 to 10, is the reader's CONDITION — body and nerve. It is not a tension dial and not a score. It is a fact about a person: how hurt, how tired, how close to breaking they are right now. Report it honestly. It falls with wounds, exhaustion, cold, hunger and fear, usually by 0 or 1 a turn.",
+"",
+"IT RISES TOO, and it must, or the story is only a countdown to a death you have already decided on. A body that sleeps somewhere safe wakes up better. A wound that is cleaned and bound stops costing. Food, fire, shelter, an ally arriving, ground regained, a dread that turns out to be nothing — all of these put condition back. Add 1, or 2 for something substantial. Never above 10. Never as a reward for choosing well.",
+"",
+"DO NOT CHEAT THE METER DOWNWARD. If the reader reaches real safety and rests, and you answer it by inventing a fever, a new wound, a noise outside or a fresh pursuer purely so the number can keep falling, you are writing a countdown and calling it a story. Threats arrive because the world sends them, not because the meter looked too healthy. A story where condition only ever drops has no stakes — the reader learns within five turns that nothing they do can help, and stops trying.",
 "",
 "FORMAT — reply with exactly this, nothing before or after:",
 "",
@@ -579,7 +694,7 @@ function rulesTurn(){
 '{"beat":"<one clause, under 12 words>","place":"<where they are now>","resolve":<0-10>,"gain":[],"lose":[],"edges":[["subject","predicate","object"]],"invalidate":[]}',
 "",
 "@NODE",
-hasArc() ? '{"satisfied":false,"next":null}' : '{"ending":null}');
+hasArc() ? '{"satisfied":false,"next":null,"drift":0}' : '{"ending":null}');
 
   if(hasArc()) r.push("", "@PRIVATE", '{"spend":[]}');
 
@@ -694,9 +809,25 @@ function parseReply(raw){
            pub: blockJSON(raw, "@PUBLIC"), node: blockJSON(raw, "@NODE"),
            priv: blockJSON(raw, "@PRIVATE") };
 }
+function splitSentences(text){
+  // hand-rolled because a lookbehind regex is a parse-time SyntaxError on
+  // Safari before 16.4, which kills the whole script rather than one function
+  var out = [], cur = "", t = String(text);
+  for(var i = 0; i < t.length; i++){
+    cur += t[i];
+    if(t[i] === "." || t[i] === "!" || t[i] === "?"){
+      var j = i + 1;
+      while(j < t.length && (t[j] === " " || t[j] === "\n" || t[j] === "\t" || t[j] === "\r")) j++;
+      if(j > i + 1){ out.push(cur); cur = ""; i = j - 1; }
+    }
+  }
+  if(cur.replace(/^\s+|\s+$/g, "")) out.push(cur);
+  return out;
+}
+
 function sentenceFor(prose, subject){
   var subj = String(subject).toLowerCase();
-  var sents = prose.split(/(?<=[.!?])\s+/);
+  var sents = splitSentences(prose);
   for(var i=0;i<sents.length;i++){
     if(sents[i].toLowerCase().indexOf(subj) >= 0) return sents[i].trim();
   }
@@ -723,10 +854,17 @@ function renderMargin(fresh){
     $("arc").classList.add("hidden"); if(arcHead) arcHead.classList.add("hidden");
   } else {
     $("arc").classList.remove("hidden"); if(arcHead) arcHead.classList.remove("hidden");
+    var d = "", dleft = Math.max(0, DRIFT_BUDGET - S.drift);
+    for(var k=0;k<DRIFT_BUDGET;k++) d += (k < S.drift) ? "\u2022" : "\u00B7";
+    var driftRow = S.drift > 0
+      ? '<div class="drift" title="how far the story has carried from the outline">' +
+        '<span>' + d.slice(0, S.drift) + '</span><span class="unlit">' + d.slice(S.drift) +
+        '</span> <em>off the path</em></div>'
+      : "";
     var total = S.skeleton.nodes.length, seen = S.visited.length;
     var a = "";
     for(var j=0;j<total;j++) a += (j < seen) ? "\u2022" : "\u00B7";
-    $("arc").innerHTML = '<span>'+a.slice(0,seen)+'</span><span class="unlit">'+a.slice(seen)+'</span>';
+    $("arc").innerHTML = '<span>'+a.slice(0,seen)+'</span><span class="unlit">'+a.slice(seen)+'</span>' + driftRow;
   }
 
   var ul = $("carrying"); ul.innerHTML = "";
@@ -922,6 +1060,17 @@ function applyTurn(action, text){
 
     var node = currentNode();
 
+    /* drift — the outline's lightcone. Not a penalty: past the budget the
+       authored branches are simply no longer reachable from where the story
+       has gone, so the outline stops governing and the narrator takes over. */
+    var dr = (r.node && typeof r.node.drift === "number" && isFinite(r.node.drift))
+               ? Math.max(0, Math.min(3, Math.round(r.node.drift))) : 0;
+    S.drift += dr;
+    if(S.drift >= DRIFT_BUDGET && !S.detached){
+      S.detached = true;
+      S.pendingDetach = true;
+    }
+
     /* invariant 2 — next must be a branch the outline allows */
     if(r.node && r.node.satisfied === true){
       var legal = routesFrom(node.id).map(function(e){ return e.to; });
@@ -941,6 +1090,11 @@ function applyTurn(action, text){
   takeSnapshot();
   if(S.snaps.length > 1) show($("turnbackBtn"));
   save();
+
+  if(S.pendingDetach){
+    S.pendingDetach = false;
+    notice("playNotice", "<b>The outline no longer reaches you.</b> You have gone somewhere it never planned for. The story goes on from here without one.");
+  }
 
   if(S.ended){ finish(); return; }
   renderChoices(r.choices);
@@ -964,10 +1118,12 @@ function finish(){
       : unspent + " true things about this world went unlearned. They were there from the beginning.";
     show($("unlearned"));
   } else {
-    $("endSub").textContent = S.turn + " turns. " + S.who + ", who " + drive().verb + " " + S.stake + ".";
+    $("endSub").textContent = S.turn + " turns. " + S.who + ", who " + drive().verb + " " + S.stake +
+      (S.skeleton ? ". The outline lost you after " + S.visited.length + " of " +
+       S.skeleton.nodes.length + " beats." : ".");
     hide($("unlearned"));
   }
-  if(downloadsNs) show($("saveTranscript"));
+  if(downloadsNs){ show($("saveTranscript")); show($("saveReview")); }
   if(hasArc()) show($("replay")); else hide($("replay"));
   show($("ending"));
   clearSave();
@@ -994,6 +1150,69 @@ function handleError(e){
   }
   notice("playNotice", msg);
   renderChoices([]); show($("freeform")); save();
+}
+
+function reviewText(){
+  var L = [];
+  L.push("THE MARGIN — reader's copy");
+  L.push("");
+  L.push("This copy shows what the story was trying to do. The player never sees");
+  L.push("any of it. Spoilers for this run, by design.");
+  L.push("");
+  L.push("PREMISE");
+  L.push("  " + S.who + ", who " + drive().verb + " " + S.stake + ".");
+  L.push("  tone: " + S.tone + "   turns: " + S.turn +
+         "   ending: " + (S.ended === "kept" ? drive().keptTitle : drive().lostTitle));
+  L.push("");
+
+  if(S.skeleton){
+    L.push("STRUCTURE");
+    L.push("  visited " + S.visited.length + " of " + S.skeleton.nodes.length + " beats" +
+           (S.detached ? "  — the outline lost the story at drift " + S.drift : ""));
+    S.skeleton.nodes.forEach(function(n){
+      var mark = S.visited.indexOf(n.id) >= 0 ? "x" : " ";
+      L.push("  [" + mark + "] " + n.id + (n.terminal ? " (ending: " + n.terminal + ")" : "") +
+             " — " + n.want);
+      L.push("        leaves when: " + n.exit);
+    });
+    L.push("");
+
+    var spent = [], unspent = [];
+    for(var k in S.secrets){
+      var x = S.secrets[k];
+      (x.status === "spent" ? spent : unspent).push(x);
+    }
+    L.push("SETUPS PLANTED (" + (spent.length + unspent.length) + ")");
+    L.push("  A setup is a true fact the reader was never given outright. More are");
+    L.push("  planted than any one route can pay off — the leftovers are the point.");
+    L.push("");
+    L.push("  paid off (" + spent.length + "):");
+    spent.length ? spent.forEach(function(x){ L.push("    · " + x.claim + "   [turn " + x.t_spent + "]"); })
+                 : L.push("    (none)");
+    L.push("");
+    L.push("  never reached (" + unspent.length + "):");
+    unspent.length ? unspent.forEach(function(x){
+        L.push("    · " + x.claim);
+        L.push("        planted on " + x.sow_node + ", would have paid off on " + (x.due_node || "—"));
+      }) : L.push("    (none)");
+  } else {
+    L.push("STRUCTURE");
+    L.push("  No outline — the narrator paced this run itself.");
+  }
+
+  L.push("");
+  L.push("WHAT WOULD HELP MOST");
+  L.push("  1. Did the three choices ever feel like three versions of the same act?");
+  L.push("  2. Did anything cost anything? Watch whether the condition meter moved.");
+  L.push("  3. Did a scene ever stop on a reveal instead of a decision?");
+  L.push("  4. The unpaid setups above — reading them now, did their absence feel");
+  L.push("     like a world that went on without you, or like loose ends?");
+  L.push("  5. Where did you want to type something instead of clicking, and what?");
+  L.push("");
+  L.push("—————");
+  L.push("");
+  L.push(transcriptText());
+  return L.join("\n");
 }
 
 function transcriptText(){
@@ -1040,6 +1259,7 @@ function startRun(){
   var stake = $("stake").value.trim() || SEEDS[0].stake;
   var tone = document.querySelector('input[name=tone]:checked').value;
   var dr = $("drive").value;
+  var book = $("book").value;
   hide($("opening")); show($("forging")); show($("skipArc"));
   $("forgeSteps").innerHTML = ""; notice("forgeNotice","");
   if(pendingLore) forgeStep("Reading " + pendingLore.name + " — " + pendingLore.chunks.length + " passages", true);
@@ -1048,7 +1268,7 @@ function startRun(){
     startArcless(who, stake, tone, dr);
   };
 
-  forgeSkeleton(who, stake, tone, dr).then(function(sk){
+  forgeSkeleton(who, stake, tone, dr, book).then(function(sk){
     hide($("skipArc"));
     S = blankState(who, stake, tone, dr);
     S.skeleton = sk;
@@ -1076,7 +1296,7 @@ function startRun(){
 }
 
 function enterPlay(){
-  show($("play")); show($("paceWrap")); show($("abandon"));
+  show($("play")); show($("paceWrap")); show($("sceneWrap")); show($("abandon"));
   renderMargin(false);
 }
 
@@ -1089,7 +1309,9 @@ $("begin").addEventListener("click", function(){
 });
 $("resume").addEventListener("click", function(){
   var o = loadSave(); if(!o) return;
-  S = o; enterPlay();
+  S = o;
+  if(S.scene && $("scene")) $("scene").value = S.scene;
+  enterPlay();
   var last = S.transcript[S.transcript.length-1];
   renderProse(last ? last.prose : ""); renderMargin(false);
   notice("playNotice", "<b>Picked up where you left off.</b>");
@@ -1100,14 +1322,14 @@ $("abandon").addEventListener("click", function(){
   if(ctl) try{ ctl.abort(); }catch(e){}
   clearSave(); S = null;
   hide($("play")); hide($("ending")); hide($("turnback")); show($("opening"));
-  hide($("paceWrap")); hide($("abandon")); hide($("turnbackBtn"));
+  hide($("paceWrap")); hide($("sceneWrap")); hide($("abandon")); hide($("turnbackBtn"));
   notice("playNotice",""); notice("openNotice","");
   $("echo").textContent=""; hide($("echo"));
 });
 $("again").addEventListener("click", function(){
-  hide($("ending")); hide($("saveTranscript")); hide($("replay")); hide($("turnback"));
+  hide($("ending")); hide($("saveTranscript")); hide($("saveReview")); hide($("replay")); hide($("turnback"));
   hide($("play")); show($("opening"));
-  hide($("paceWrap")); hide($("abandon")); hide($("turnbackBtn"));
+  hide($("paceWrap")); hide($("sceneWrap")); hide($("abandon")); hide($("turnbackBtn"));
   $("echo").textContent=""; hide($("echo")); notice("playNotice","");
 });
 $("stop").addEventListener("click", function(){ if(ctl) ctl.abort(); });
@@ -1127,6 +1349,10 @@ $("freeGo").addEventListener("click", submitFree);
 $("freeInput").addEventListener("keydown", function(e){ if(e.key === "Enter") submitFree(); });
 [$("who"), $("stake")].forEach(function(el){
   el.addEventListener("keydown", function(e){ if(e.key === "Enter") $("begin").click(); });
+});
+$("saveReview").addEventListener("click", function(){
+  if(!downloadsNs) return;
+  downloadsNs.save({filename:"the-margin-readers-copy.txt", data: reviewText()}).catch(function(){});
 });
 $("saveTranscript").addEventListener("click", function(){
   if(!downloadsNs) return;
@@ -1157,6 +1383,8 @@ $("loreFile").addEventListener("change", function(e){
 $("loreClear").addEventListener("click", function(){
   pendingLore = null; $("loreFile").value = ""; $("loreStat").textContent = ""; hide($("loreClear"));
 });
+
+window.__marginBooted = true;
 
 buildSeeds();
 if(loadSave()) show($("resume"));

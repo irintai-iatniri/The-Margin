@@ -41,6 +41,9 @@ const partA = slice("var DRIVES = {", "function forgeStep(");
 const partB = slice("function hasArc(){", "/* ============================ rendering");
 
 const S_stub = `
+// rulesTurn reads the scene-length control from the DOM; in node there isn't
+// one, so stub it and let scene() fall back to S.scene
+var document = { getElementById: function(){ return null; } };
 var S = null;
 function blankState(who, stake, tone, dr){
   return { who:who, stake:stake, tone:tone, drive:dr, place:"—", resolve:8, items:[],
@@ -128,14 +131,29 @@ function looseJSON(raw) {
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   check(`outline streamed (${out.deltas} deltas, ${secs}s)`, out.deltas > 1);
 
-  const sk = looseJSON(out.text);
+  let sk = looseJSON(out.text);
   check("outline is parseable JSON", !!sk && Array.isArray(sk.nodes),
         out.text.slice(-200));
   if (!sk || !Array.isArray(sk.nodes)) { console.log("\n  cannot continue without an outline\n"); process.exit(1); }
 
   check(`beats generated (${sk.nodes.length})`, sk.nodes.length >= 8);
-  const problems = api.verifySkeleton(sk);
-  check("verification clean", problems.length === 0, problems.join("; "));
+
+  // The page retries once when verification rejects an outline, so the suite
+  // does too -- a model that occasionally emits a bad graph is expected, and
+  // what matters is that a retry recovers rather than that attempt one is clean.
+  let problems = api.verifySkeleton(sk);
+  let attempts = 1;
+  if (problems.length) {
+    console.log(`  note  attempt 1 rejected: ${problems.slice(0,2).join("; ")}`);
+    const retry = await sample(api.skeletonPrompt(WHO, STAKE, TONE, DRIVE), "quick");
+    const sk2 = looseJSON(retry.text);
+    if (sk2 && Array.isArray(sk2.nodes)) {
+      const p2 = api.verifySkeleton(sk2);
+      attempts = 2;
+      if (p2.length < problems.length) { sk = sk2; problems = p2; }
+    }
+  }
+  check(`verification clean (attempt ${attempts})`, problems.length === 0, problems.join("; "));
   const terms = sk.nodes.filter(n => n.terminal);
   check(`endings present (${terms.map(n=>n.terminal).join(", ")})`,
         terms.some(n=>n.terminal==="kept") && terms.some(n=>n.terminal==="lost"));
@@ -148,7 +166,8 @@ function looseJSON(raw) {
         abstractExits.map(n=>`${n.id}: ${n.exit}`).join(" | "));
 
   /* ---- play ---- */
-  const S = { who:WHO, stake:STAKE, tone:TONE, drive:DRIVE, place:"—", resolve:8, items:[],
+  const S = { who:WHO, stake:STAKE, tone:TONE, drive:DRIVE, scene:"standard",
+              place:"—", resolve:8, items:[],
               turn:0, beats:[], transcript:[], history:[], skeleton:sk, node:sk.start,
               visited:[sk.start], nodeTurns:0, secrets, edges:[], edgeSeq:0, lore:null,
               snaps:[], lastChoices:[], ended:null };
