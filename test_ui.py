@@ -164,7 +164,8 @@ def normal_script(run, blob, is_outline, turns):
                     {"beat": "the barge wedges in the ice", "place": "the frozen canal",
                      "resolve": 7, "gain": ["a boat hook"], "lose": [],
                      "edges": [["collector", "waits on", "the towpath"]], "invalidate": []},
-                    {"satisfied": False, "next": None, "drift": 0}, {"spend": []})
+                    {"satisfied": False, "next": None,
+                     "reachable": ["n3", "n4", "n5", "n6"]}, {"spend": []})
     # one advance per turn along the spine, ending at n8 on the sixth
     spine = {2: "n2", 3: "n3", 4: "n4", 5: "n5", 6: "n6", 7: "n8"}
     if turns in spine:
@@ -174,12 +175,14 @@ def normal_script(run, blob, is_outline, turns):
                      "resolve": max(3, 8 - turns), "gain": [],
                      "lose": (["a boat hook"] if turns == 3 else []),
                      "edges": [], "invalidate": []},
-                    {"satisfied": True, "next": nxt, "drift": 0},
+                    {"satisfied": True, "next": nxt,
+                     "reachable": ["n3", "n4", "n5", "n6"]},
                     {"spend": (["s1"] if turns == 4 else [])})
     return turn(PROSE, ["Hold the line.", "Give ground.", "Look again at the ice."],
                 {"beat": "the cold settles in", "place": "open water", "resolve": 5,
                  "gain": [], "lose": [], "edges": [], "invalidate": []},
-                {"satisfied": False, "next": None, "drift": 0}, {"spend": []})
+                {"satisfied": False, "next": None,
+                 "reachable": ["n3", "n4", "n5", "n6"]}, {"spend": []})
 
 
 # ----------------------------------------------------------------- scenarios
@@ -267,6 +270,12 @@ def scenario_turnback(browser):
     pts = r.page.query_selector_all("#turnback .tb")
     check("turning points offered (%d)" % len(pts), len(pts) >= 1)
     check("points are labelled by beat", len(r.text("#turnback")) > 20)
+    check("panel shows the count before choosing", "rewind" in r.text("#turnback").lower(),
+          r.text("#turnback"))
+    check("the last turn is marked free", "undo, free" in r.text("#turnback"),
+          r.text("#turnback"))
+    check("earlier points cost a rewind", "1 rewind" in r.text("#turnback"),
+          r.text("#turnback"))
     pts[-1].click()
     r.page.wait_for_function("!document.getElementById('turnback').classList.contains('hidden')===false",
                              timeout=4000)
@@ -400,21 +409,27 @@ def scenario_drift(browser):
             return turn(PROSE, ["Answer the lantern.", "Run for the treeline.", "Say the name."],
                         {"beat": "the barge wedges in the ice", "place": "the frozen canal",
                          "resolve": 7, "gain": [], "lose": [], "edges": [], "invalidate": []},
-                        {"satisfied": False, "next": None, "drift": 0}, {"spend": []})
-        # every turn after the first walks three degrees away: 3,6,9 -> detaches on the third
+                        {"satisfied": False, "next": None,
+                         "reachable": ["n3", "n4", "n5", "n6"]}, {"spend": []})
+        # nothing left reachable: +3 a turn, so the third turn crosses the budget
         return turn(PROSE, ["Keep walking.", "Turn back.", "Sleep where you stand."],
                     {"beat": "further from the canal", "place": "somewhere unmapped",
                      "resolve": 6, "gain": [], "lose": [], "edges": [], "invalidate": []},
-                    {"satisfied": False, "next": None, "drift": 3}, {"spend": []})
+                    {"satisfied": False, "next": None, "reachable": []}, {"spend": []})
 
     r = Run(browser, wanders)
     r.begin()
     r.page.wait_for_selector("#choices .choice", timeout=15000)
     check("starts on the outline", r.visible("#arc"))
+    check("no drift while beats remain reachable", "off the path" not in r.text("#arc"),
+          r.text("#arc"))
 
     r.page.click("#choices .choice >> nth=1")
     r.page.wait_for_function("document.getElementById('beats').children.length===2", timeout=15000)
-    check("drift is shown once it starts", "off the path" in r.text("#arc"), r.text("#arc"))
+    check("drift starts when nothing is reachable", "off the path" in r.text("#arc"),
+          r.text("#arc"))
+    check("the margin says how much is still in reach", "in reach" in r.text("#arc"),
+          r.text("#arc"))
     check("still on the outline below the budget", r.visible("#arcHead"))
 
     r.page.click("#choices .choice >> nth=0")
@@ -438,6 +453,283 @@ def scenario_drift(browser):
     check("narrator now paces its own ending", '"ending"' in rules and "THE BEAT." not in rules)
     check("play continues, not punished",
           len(r.page.query_selector_all("#choices .choice")) == 3)
+    r.close()
+
+
+def scenario_rewinds(browser):
+    print("\n[9] rewinds — three per run, undo is free")
+    r = Run(browser, normal_script)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    for n in range(2, 6):
+        r.page.click("#choices .choice >> nth=0")
+        r.page.wait_for_function(
+            "document.getElementById('beats').children.length===%d" % n, timeout=15000)
+
+    def left():
+        return r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2')).rewinds")
+
+    check("starts with three", left() == 3, left())
+
+    # undoing the turn just taken is free
+    r.page.click("#turnbackBtn")
+    r.page.wait_for_selector("#turnback .tb", timeout=4000)
+    r.page.click("#turnback .tb >> nth=0")
+    r.page.wait_for_timeout(400)
+    check("undo of the last turn is free", left() == 3, left())
+    check("undo says so", "undone" in r.text("#playNotice").lower(), r.text("#playNotice"))
+
+    # jumping to a beat boundary costs one
+    for n in range(len(r.page.query_selector_all("#beats > li")) + 1, 6):
+        r.page.click("#choices .choice >> nth=0")
+        r.page.wait_for_function(
+            "document.getElementById('beats').children.length===%d" % n, timeout=15000)
+    r.page.click("#turnbackBtn")
+    r.page.wait_for_selector("#turnback .tb", timeout=4000)
+    pts = r.page.query_selector_all("#turnback .tb")
+    if len(pts) > 1:
+        pts[-1].click()
+        r.page.wait_for_timeout(400)
+        check("a beat rewind costs one", left() == 2, left())
+        check("the notice reports what is left", "rewind" in r.text("#playNotice").lower(),
+              r.text("#playNotice"))
+    else:
+        check("a beat rewind costs one", False, "no beat-boundary point offered")
+
+    # drain the count and confirm the floor holds. Writing localStorage alone is
+    # not enough -- the page runs off its in-memory state, so reload and resume.
+    r.page.evaluate("""() => {
+      const k='margin:run:v2', o=JSON.parse(localStorage.getItem(k));
+      o.rewinds=0; localStorage.setItem(k, JSON.stringify(o));
+    }""")
+    r.page.reload()
+    r.page.wait_for_selector("#resume", timeout=5000)
+    r.page.click("#resume")
+    r.page.wait_for_selector("#play", state="visible", timeout=5000)
+    # the earlier rewind truncated the snapshots, so there may be nothing to turn
+    # back to yet -- correct behaviour, but take a turn so the panel has entries
+    r.page.wait_for_selector("#choices .choice", timeout=5000)
+    n0 = r.page.eval_on_selector("#beats", "e => e.children.length")
+    r.page.click("#choices .choice >> nth=0")
+    r.page.wait_for_function(
+        "document.getElementById('beats').children.length===%d" % (n0 + 1), timeout=15000)
+    r.page.wait_for_selector("#turnbackBtn", state="visible", timeout=5000)
+    r.page.click("#turnbackBtn")
+    r.page.wait_for_selector("#turnback", timeout=4000)
+    panel = r.text("#turnback")
+    check("exhausted count is shown", "no rewinds left" in panel.lower(), panel)
+    # the invariant is that NO paid entry is clickable, not that one exists --
+    # with a short snapshot list the only point on offer may be the free undo
+    state = r.page.eval_on_selector_all("#turnback .tb", """els => els.map(e => ({
+      free: e.textContent.indexOf('undo, free') >= 0, disabled: e.disabled }))""")
+    paid = [e for e in state if not e["free"]]
+    check("no paid rewind is clickable when exhausted",
+          all(e["disabled"] for e in paid),
+          "%d paid, %d of them disabled" % (len(paid), sum(1 for e in paid if e["disabled"])))
+    check("the free undo stays available",
+          all(not e["disabled"] for e in state if e["free"]), str(state))
+    r.close()
+
+
+def scenario_wander(browser):
+    print("\n[10] wandering with routes open is not drift")
+
+    def roams(run, blob, is_outline, turns):
+        if is_outline:
+            return json.dumps(outline())
+        # far from the current beat every turn, but the outline can still resolve
+        return turn(PROSE, ["Go further.", "Go back.", "Stop and look."],
+                    {"beat": "somewhere else entirely", "place": "off the canal",
+                     "resolve": 6, "gain": [], "lose": [], "edges": [], "invalidate": []},
+                    {"satisfied": False, "next": None,
+                     "reachable": ["n3", "n4", "n5", "n6", "n7"]}, {"spend": []})
+
+    r = Run(browser, roams)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    for n in range(2, 7):
+        r.page.click("#choices .choice >> nth=0")
+        r.page.wait_for_function(
+            "document.getElementById('beats').children.length===%d" % n, timeout=15000)
+
+    drift = r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2')).drift")
+    check("six turns off-beat, drift still zero", drift == 0, drift)
+    check("still attached to the outline", r.visible("#arc"))
+    check("no detach notice", "no longer reaches you" not in r.text("#playNotice"),
+          r.text("#playNotice"))
+    r.close()
+
+
+def scenario_reachcost(browser):
+    print("\n[11] losing reach costs condition")
+
+    # turn 2 loses two beats and the narrator refuses to pay, so the floor fires.
+    # turn 3 onward reports the docked value and loses nothing more.
+    def closing(run, blob, is_outline, turns):
+        if is_outline:
+            return json.dumps(outline())
+        reach = ["n3", "n4", "n5", "n6"] if turns == 1 else ["n5", "n6"]
+        res = 7 if turns <= 2 else 5
+        return turn(PROSE, ["A.", "B.", "C."],
+                    {"beat": "turn %d" % turns, "place": "the canal", "resolve": res,
+                     "gain": [], "lose": [], "edges": [], "invalidate": []},
+                    {"satisfied": False, "next": None, "reachable": reach}, {"spend": []})
+
+    r = Run(browser, closing)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+
+    def cond():
+        return r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2')).resolve")
+
+    def step(n):
+        r.page.click("#choices .choice >> nth=0")
+        r.page.wait_for_function(
+            "document.getElementById('beats').children.length===%d" % n, timeout=15000)
+
+    check("condition starts where the narrator put it", cond() == 7, cond())
+
+    step(2)
+    check("losing two beats costs condition even when the narrator won't",
+          cond() == 5, cond())
+
+    # the request for the NEXT turn is the first one built after the loss
+    step(3)
+    sent = r.seen[-1]["messages"][-1]["content"]
+    check("the closing is announced to the narrator", "[THE WORLD CLOSED]" in sent,
+          sent[:200])
+    check("it names how many", "2 beats" in sent, sent[:200])
+    check("no further cost when nothing is lost", cond() == 5, cond())
+
+    step(4)
+    nxt = r.seen[-1]["messages"][-1]["content"]
+    check("and the notice clears once paid", "[THE WORLD CLOSED]" not in nxt, nxt[:200])
+    check("condition holds steady", cond() == 5, cond())
+    r.close()
+
+
+def scenario_identity(browser):
+    print("\n[12] who you are — optional")
+
+    r = Run(browser, normal_script)
+    check("panel is present", r.visible(".whopanel"))
+    check("and collapsed by default",
+          not r.page.eval_on_selector(".whopanel", "e => e.open"))
+
+    # a run with nothing filled in must carry no identity block at all
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    blank_outline = "\n".join(m["content"] for m in r.seen[0]["messages"])
+    check("absent when unused", "[WHO THEY ARE" not in blank_outline)
+    r.close()
+
+    r = Run(browser, normal_script)
+    r.page.eval_on_selector(".whopanel", "e => e.open = true")
+    r.page.fill("#idName", "Adaeze Okonkwo")
+    r.page.fill("#idPron", "she/her")
+    r.page.fill("#idKind", "Igbo, third generation off-world")
+    r.page.fill("#idBody", "fifty-one, broad-shouldered, a burn scar along one forearm")
+    r.page.fill("#idBear", "speaks slowly, never repeats herself")
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+
+    outline = "\n".join(m["content"] for m in r.seen[0]["messages"])
+    check("reaches the outline", "[WHO THEY ARE" in outline)
+    check("carries the name", "Adaeze Okonkwo" in outline)
+    check("carries kind and pronouns", "Igbo" in outline and "she/her" in outline)
+
+    rules = r.seen[1]["messages"][0]["content"]
+    check("reaches the narrator", "[WHO THEY ARE" in rules)
+    check("carries body and bearing", "burn scar" in rules and "never repeats herself" in rules)
+    check("tells the narrator not to make it the subject",
+          "not a theme" in rules and "Write a person, not a category" in rules)
+
+    saved = r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2')).ident")
+    check("persisted with the run", bool(saved) and saved.get("pronouns") == "she/her",
+          str(saved))
+    r.close()
+
+
+def scenario_leak(browser):
+    print("\n[13] choices must not leak into the prose")
+
+    leaked = ('The line hisses. Somewhere behind her a door closes.\n\n'
+              '- Tell her you are ready and ask her to work on it with you anyway.\n'
+              '- Ask her what she saw three years ago, before she stopped.\n'
+              '- Hang up and compute 48 alone, as she suggests.')
+
+    def sloppy(run, blob, is_outline, turns):
+        if is_outline:
+            return json.dumps(outline())
+        return turn(leaked, ["Ask her to work on it with you anyway, ready or not.",
+                             "What did you see three years ago?",
+                             "Hang up and compute 48 alone."],
+                    {"beat": "she asks if you are ready", "place": "the phone",
+                     "resolve": 6, "gain": [], "lose": [], "edges": [], "invalidate": []},
+                    {"satisfied": False, "next": None,
+                     "reachable": ["n3", "n4", "n5", "n6"]}, {"spend": []})
+
+    r = Run(browser, sloppy)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    prose = r.text("#prose")
+    check("the scene itself survives", "door closes" in prose, prose[:160])
+    check("the leaked list is stripped", "Tell her you are ready" not in prose, prose[-200:])
+    check("three choices still render",
+          len(r.page.query_selector_all("#choices .choice")) == 3)
+    check("the buttons keep their own wording",
+          "ready or not" in r.text("#choices"), r.text("#choices"))
+    r.close()
+
+
+def scenario_continue(browser):
+    print("\n[14] keeping going past the ending")
+
+    # close the book by attrition, which is the case that would re-close itself
+    def dying(run, blob, is_outline, turns):
+        if is_outline:
+            return json.dumps(outline())
+        return turn(PROSE, ["A.", "B.", "C."],
+                    {"beat": "turn %d" % turns, "place": "the canal",
+                     "resolve": max(0, 4 - turns * 2),
+                     "gain": [], "lose": [], "edges": [], "invalidate": []},
+                    {"satisfied": False, "next": None,
+                     "reachable": ["n3", "n4", "n5", "n6"], "ending": None}, {"spend": []})
+
+    r = Run(browser, dying)
+    r.begin()
+    r.page.wait_for_selector("#choices .choice", timeout=15000)
+    for n in range(2, 6):
+        if r.visible("#ending"):
+            break
+        r.page.click("#choices .choice >> nth=0")
+        r.page.wait_for_timeout(1400)
+
+    r.page.wait_for_selector("#ending", state="visible", timeout=20000)
+    check("the book closed", r.visible("#ending"))
+    check("keep going is offered", r.visible("#continueOn"))
+    check("it reads as a first continuation", r.text("#continueOn") == "Keep going",
+          r.text("#continueOn"))
+
+    before = r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2') || 'null')")
+    check("the save was cleared by the ending", before is None)
+
+    r.page.click("#continueOn")
+    r.page.wait_for_selector("#choices .choice", timeout=20000)
+
+    check("play resumed", not r.visible("#ending"))
+    check("the notice explains it", "past the ending" in r.text("#playNotice").lower(),
+          r.text("#playNotice"))
+    cond = r.page.evaluate("() => JSON.parse(localStorage.getItem('margin:run:v2')).resolve")
+    check("zero condition was lifted off the floor", cond >= 1, cond)
+    check("the run is saved again",
+          r.page.evaluate("() => localStorage.getItem('margin:run:v2') !== null"))
+
+    rules = r.seen[-1]["messages"][0]["content"]
+    check("the narrator is told the book already closed", "PAST THE ENDING" in rules)
+    check("and told not to undo it", "do not undo the ending" in rules.lower(), "")
+    check("the outline is dropped", "[BEAT]" not in r.seen[-1]["messages"][-1]["content"])
+    check("arc meter retired", not r.visible("#arc"))
     r.close()
 
 
@@ -494,7 +786,9 @@ def main():
             sys.exit("no usable browser — run: python3 -m playwright install chromium")
         for fn in (scenario_premise, scenario_lore, scenario_play,
                    scenario_turnback, scenario_ending, scenario_failures,
-                   scenario_drift, scenario_persistence):
+                   scenario_drift, scenario_wander, scenario_rewinds,
+                   scenario_reachcost, scenario_identity, scenario_leak,
+                   scenario_continue, scenario_persistence):
             try:
                 out = fn(browser)
                 if hasattr(out, "close"):
